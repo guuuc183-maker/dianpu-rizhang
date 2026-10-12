@@ -1,9 +1,8 @@
-// 在 Firebase 控制台 → 项目设置 → 你的应用（网页 </>）里，把 firebaseConfig 整段复制过来替换下面这段
 export const firebaseConfig = {
-  apiKey: "在这里填",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyCosjde3c_IFC_vTAhn9AazoujiwNXMDnA",
+  authDomain: "dianpu-rizhang.firebaseapp.com",
+  projectId: "dianpu-rizhang",
+  storageBucket: "dianpu-rizhang.firebasestorage.app",
+  messagingSenderId: "53242002503",
+  appId: "1:53242002503:web:e140be56edb3514ceec562"
 };
