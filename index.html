@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C8102E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="店铺日账">
+<title>店铺日账</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- 加载中 -->
+<section id="s-loading" class="screen center-screen">
+  <div class="logo">账</div>
+  <div class="muted">加载中…</div>
+</section>
+
+<!-- 未配置 -->
+<section id="s-config" class="screen center-screen" hidden>
+  <div class="logo">账</div>
+  <p>还没配置 Firebase。<br>请按「使用说明」把配置填进 <b>config.js</b>。</p>
+</section>
+
+<!-- 登录 -->
+<section id="s-login" class="screen" hidden>
+  <div class="hero">
+    <div class="logo">账</div>
+    <h1>店铺日账</h1>
+    <p class="muted">每日营业额 · 多台手机一起记</p>
+  </div>
+  <div class="card">
+    <button class="btn google" id="btn-google"><span class="g">G</span> 用 Google 账号登录</button>
+    <div class="or"><span>或用邮箱</span></div>
+    <input id="in-email" type="email" placeholder="邮箱" autocomplete="email">
+    <input id="in-pw" type="password" placeholder="密码（至少 6 位）" autocomplete="current-password">
+    <button class="btn" id="btn-login">登录</button>
+    <div class="links">
+      <a id="lnk-register">没有账号？注册</a>
+      <a id="lnk-forgot">忘记密码</a>
+    </div>
+  </div>
+</section>
+
+<!-- 创建 / 加入店铺 -->
+<section id="s-setup" class="screen" hidden>
+  <div class="hero small">
+    <h1>开始使用</h1>
+    <p class="muted">店主新建店铺，家人和店员用邀请码加入</p>
+  </div>
+  <div class="seg" id="setup-seg">
+    <button data-m="create" class="on">我是店主，新建店铺</button>
+    <button data-m="join">用邀请码加入</button>
+  </div>
+  <div class="card">
+    <label class="field" id="f-shopname"><span>店名</span><input id="in-shopname" placeholder="如：Chinashop Videle" maxlength="40"></label>
+    <label class="field" id="f-code" hidden><span>邀请码</span><input id="in-code" placeholder="6 位，店主给的" maxlength="6" autocapitalize="characters" autocomplete="off"></label>
+    <label class="field"><span>你的名字</span><input id="in-myname" placeholder="如：MAO、妈妈" maxlength="20"></label>
+  </div>
+  <button class="btn wide" id="btn-setup">创建店铺</button>
+  <p class="center muted small">当前账号：<span id="setup-email"></span> · <a id="lnk-logout1">换个账号</a></p>
+</section>
+
+<!-- 主界面 -->
+<section id="s-app" class="screen" hidden>
+  <header class="topbar">
+    <div class="shopname" id="hdr-shop"></div>
+    <div class="sync" id="hdr-sync"></div>
+  </header>
+
+  <!-- 记账 -->
+  <main id="v-entry" class="view">
+    <div class="card">
+      <div class="datebar">
+        <button class="arrow" id="d-prev" aria-label="前一天">‹</button>
+        <label class="datepick">
+          <span id="d-text"></span>
+          <input type="date" id="in-date">
+        </label>
+        <button class="arrow" id="d-next" aria-label="后一天">›</button>
+      </div>
+      <div class="muted small center" id="d-status"></div>
+    </div>
+
+    <div class="card">
+      <label class="row"><span>现金 Numerar</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0.00" autocomplete="off"></label>
+      <label class="row"><span>刷卡 Card</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0.00" autocomplete="off"></label>
+      <label class="row"><span>备注</span><input class="note" id="in-note" placeholder="选填，如：下雨、节假日" maxlength="100"></label>
+    </div>
+
+    <div class="card center">
+      <div class="label">当天合计</div>
+      <div class="big"><span id="t-total">0.00</span> lei</div>
+    </div>
+
+    <div class="card">
+      <div class="label">去年今日</div>
+      <div class="row"><span id="ly-date"></span><span><b id="ly-val"></b><i class="pct" id="ly-pct"></i></span></div>
+      <div class="row"><span id="lw-date"></span><span><b id="lw-val"></b><i class="pct" id="lw-pct"></i></span></div>
+      <div class="muted small">开店看星期几影响很大，第二行对比更准</div>
+    </div>
+
+    <button class="btn wide" id="btn-save">保存</button>
+    <button class="btn light wide" id="btn-del" hidden>删除这一天</button>
+  </main>
+
+  <!-- 图表 -->
+  <main id="v-charts" class="view" hidden>
+    <div class="seg" id="chart-seg">
+      <button data-t="day" class="on">每天</button>
+      <button data-t="week">每周</button>
+      <button data-t="year">每年</button>
+    </div>
+    <div class="card">
+      <label class="row" id="pick-month"><span>月份</span><input type="month" id="in-month"></label>
+      <label class="row" id="pick-year" hidden><span>年份</span><select id="in-year"></select></label>
+      <div class="sum">
+        <div><div class="label" id="sum-cur-t"></div><div class="big" id="sum-cur"></div></div>
+        <div class="right"><div class="label" id="sum-prev-t"></div><div class="prev" id="sum-prev"></div><i class="pct" id="sum-pct"></i></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle" id="chart-title"></div>
+      <div id="chart-main"></div>
+    </div>
+    <div class="card" id="card-years" hidden>
+      <div class="ctitle">历年总营业额</div>
+      <div id="chart-years"></div>
+    </div>
+    <button class="btn light wide" id="btn-copy">复制明细（可贴到 Excel）</button>
+    <div class="card" id="day-list"></div>
+  </main>
+
+  <!-- 店铺 -->
+  <main id="v-shop" class="view" hidden>
+    <div class="card">
+      <div class="label">店铺</div>
+      <div class="shoptitle"><span id="sh-name"></span> <a id="lnk-rename" hidden>改名</a></div>
+    </div>
+    <div class="card">
+      <div class="label">邀请码（发给家人/店员，他们用这个加入）</div>
+      <div class="code" id="sh-code"></div>
+      <div class="btnrow">
+        <button class="btn mini" id="btn-invite">复制邀请消息</button>
+        <button class="btn mini light" id="btn-recode" hidden>更换邀请码</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label" id="sh-members-t"></div>
+      <div id="sh-members"></div>
+    </div>
+    <div class="card">
+      <div class="row"><span>记录天数</span><span id="sh-count"></span></div>
+      <div class="row"><span>同步状态</span><span id="sh-sync"></span></div>
+      <div class="row"><span>我的账号</span><span id="sh-email" class="small"></span></div>
+    </div>
+    <button class="btn light wide" id="btn-leave" hidden>退出店铺</button>
+    <button class="btn light wide" id="btn-logout">退出登录</button>
+    <p class="center muted small" id="install-tip"></p>
+  </main>
+
+  <nav class="tabbar">
+    <button data-v="entry" class="on"><i>✎</i>记账</button>
+    <button data-v="charts"><i>▥</i>图表</button>
+    <button data-v="shop"><i>⌂</i>店铺</button>
+  </nav>
+</section>
+
+<div id="toast" hidden></div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

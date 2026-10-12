@@ -1,0 +1,84 @@
+店铺日账 —— 全程用手机上线（免费，约 20 分钟）
+==================================================
+
+需要：一个 Gmail 账号。全程不需要信用卡，不要点任何「升级 / 付费 / Blaze」。
+建议用手机浏览器（iPhone 用 Safari，安卓用 Chrome）操作，网页太挤时可以横屏。
+
+
+第 1 步：解压
+--------------
+iPhone：在 Claude App 里点开压缩包 → 分享 →「存储到文件」→ 在「文件」App 里点一下压缩包，自动解压出 dianpu-rizhang 文件夹
+安卓：下载压缩包 → 用「文件」App 点开 → 解压
+
+
+第 2 步：把文件放到 GitHub（免费网站托管）
+------------------------------------------
+1. 打开 github.com → Sign up 注册（可以用 Gmail）
+2. 右上角「+」→「New repository」
+   · Repository name 填：dianpu-rizhang
+   · 选 Public
+   · 点「Create repository」
+3. 在新页面点蓝色小字「uploading an existing file」
+   →「choose your files」→ 进入 dianpu-rizhang 文件夹 → 全选里面所有文件（共 15 个）
+   → 上传完点底部「Commit changes」
+
+
+第 3 步：开 Firebase（存数据 + 登录）
+------------------------------------
+1. 打开 console.firebase.google.com → 用 Gmail 登录 →「创建项目」
+   名字随便（如 dianpu-rizhang），Google Analytics 关掉 → 创建
+2. 菜单「构建 → Authentication」→「开始」→「登录方法」
+   · 启用「电子邮件/密码」→ 保存
+   · 启用「Google」，支持邮箱选你的 Gmail → 保存
+3. 菜单「构建 → Firestore Database」→「创建数据库」
+   · 位置选 europe-west3 (Frankfurt)（选了不能改）
+   · 选「以生产模式启动」→ 创建
+4. 进入「规则」标签：
+   · 另开一个标签页，打开你 GitHub 仓库里的 firestore.rules 文件
+     → 点文件右上角的「复制」图标（Copy raw file）
+   · 回到 Firebase 规则页，把框里原有内容全部删掉，粘贴 → 点「发布」
+5. 齿轮「项目设置」→ 往下到「你的应用」→ 点 </> 图标
+   → 昵称随便填，不要勾 Hosting →「注册应用」
+   → 会显示 const firebaseConfig = { ... }，把大括号里那 6～7 行全部复制
+
+
+第 4 步：把配置填进去
+--------------------
+1. 回到 GitHub 仓库 → 点 config.js → 点右上角铅笔「Edit」
+2. 把 apiKey: "在这里填" 到 appId: "" 这几行删掉，粘贴刚才复制的那几行
+   （最后看起来像 apiKey: "AIza...", authDomain: "xxx.firebaseapp.com", ...）
+3. 点「Commit changes」
+
+
+第 5 步：开启网站
+----------------
+1. GitHub 仓库 →「Settings」→ 左侧菜单（手机上在顶部下拉）「Pages」
+2. Source 选「Deploy from a branch」，Branch 选「main」和「/ (root)」→ Save
+3. 等 1～2 分钟，刷新页面，会显示网址：
+   https://你的GitHub用户名.github.io/dianpu-rizhang/
+
+
+第 6 步：允许这个网址登录
+------------------------
+Firebase →「Authentication」→「设置」→「已获授权的网域」→「添加网域」
+→ 填「你的GitHub用户名.github.io」（不要 https://，也不要后面的 /dianpu-rizhang）→ 添加
+
+
+第 7 步：开始用
+--------------
+1. 手机打开网址 → 登录 →「我是店主，新建店铺」
+2. 加到主屏幕，以后像 App 一样打开：
+   iPhone：Safari 底部「分享」→「添加到主屏幕」
+   安卓：Chrome 右上角菜单 →「添加到主屏幕」或「安装应用」
+3. 「店铺」页 →「复制邀请消息」→ 发给家人/店员，他们打开网址、登录、输入邀请码就能加入
+
+
+常见问题
+--------
+· 打开显示「还没配置 Firebase」：第 4 步没保存好，或刚改完 GitHub 还没更新，等 1 分钟再刷新。
+· Google 登录报「网址还没加到授权域名」：检查第 6 步。
+· iPhone 主屏幕图标里 Google 登录没反应：改用「邮箱登录」（任意邮箱 + 密码注册）。
+· 没网也能记账，顶部显示「离线」，有网自动同步。
+· 店铺属于创建它的账号，正式店铺请用你自己的账号来建。
+· 以后有新版本：在 GitHub 仓库「Add file → Upload files」上传新文件覆盖即可（config.js 不要覆盖）。
+· 费用：Firebase 免费版和 GitHub Pages 都免费，一家店日常使用远用不完额度。

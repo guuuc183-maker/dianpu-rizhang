@@ -1,0 +1,85 @@
+rules_version = '2';
+// 店铺日账 —— Firestore 安全规则
+// 复制整段，粘贴到 Firebase 控制台 → Firestore Database → 规则，点「发布」
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function shopData(id) { return get(/databases/$(database)/documents/shops/$(id)).data; }
+    function isMember(id) { return signedIn() && me() in shopData(id).memberIds; }
+
+    // 每个账号记住自己属于哪个店
+    match /users/{userId} {
+      allow read, delete: if signedIn() && me() == userId;
+      allow create, update: if signedIn() && me() == userId
+        && request.resource.data.keys().hasOnly(['shopId'])
+        && request.resource.data.shopId is string;
+    }
+
+    // 邀请码 → 店铺。只能按码精确查询，不能列出所有码
+    match /codes/{code} {
+      allow get: if signedIn();
+      allow list, update: if false;
+      allow create: if signedIn()
+        && code.matches('^[A-Z0-9]{6}$')
+        && request.resource.data.keys().hasOnly(['shopId'])
+        && getAfter(/databases/$(database)/documents/shops/$(request.resource.data.shopId)).data.owner == me()
+        && getAfter(/databases/$(database)/documents/shops/$(request.resource.data.shopId)).data.code == code;
+      allow delete: if signedIn() && shopData(resource.data.shopId).owner == me();
+    }
+
+    match /shops/{shopId} {
+      allow read: if signedIn() && me() in resource.data.memberIds;
+
+      allow create: if signedIn()
+        && request.resource.data.owner == me()
+        && request.resource.data.memberIds == [me()]
+        && request.resource.data.keys().hasOnly(['name', 'code', 'owner', 'memberIds', 'members', 'createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 40
+        && request.resource.data.members.keys().hasOnly([me()])
+        && existsAfter(/databases/$(database)/documents/codes/$(request.resource.data.code));
+
+      allow update: if signedIn() && (
+        // 店主：改店名、换邀请码、移除成员（不能转让、不能移除自己、不能加人）
+        (resource.data.owner == me()
+          && request.resource.data.owner == me()
+          && me() in request.resource.data.memberIds
+          && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'code', 'memberIds', 'members'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 40)
+        ||
+        // 加入：必须带上正确的邀请码，只能把自己加进来
+        (!(me() in resource.data.memberIds)
+          && request.resource.data.get('joinedWith', '') == resource.data.code
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members', 'joinedWith'])
+          && request.resource.data.memberIds == resource.data.memberIds.concat([me()])
+          && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()])
+          && request.resource.data.members[me()].name is string
+          && request.resource.data.members[me()].name.size() <= 20)
+        ||
+        // 退出：成员把自己移除（店主不能退出）
+        (me() in resource.data.memberIds
+          && resource.data.owner != me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members'])
+          && request.resource.data.memberIds == resource.data.memberIds.removeAll([me()])
+          && !(me() in request.resource.data.members))
+      );
+
+      allow delete: if false;
+
+      // 每天一条营业额，文档 ID 就是日期
+      match /records/{date} {
+        allow read, delete: if isMember(shopId);
+        allow create, update: if isMember(shopId)
+          && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.keys().hasOnly(['cash', 'card', 'note', 'by', 'updatedAt'])
+          && request.resource.data.cash is number
+          && request.resource.data.card is number
+          && request.resource.data.note is string && request.resource.data.note.size() <= 100
+          && request.resource.data.by is string && request.resource.data.by.size() <= 40
+          && request.resource.data.updatedAt == request.time;
+      }
+    }
+  }
+}
