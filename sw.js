@@ -1,5 +1,5 @@
-// 离线缓存：没网也能打开 App；有新版本时后台更新，下次打开生效
-const CACHE = 'rizhang-v4';
+// 离线缓存：有网时总是取最新版本，没网时用手机上的缓存，保证离线也能打开
+const CACHE = 'rizhang-v5';
 const SHELL = [
   './', 'index.html', 'app.css', 'config.js', 'manifest.webmanifest',
   'main.js', 'db.js', 'stats.js', 'chart.js', 'firebase.js',
@@ -7,7 +7,10 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' 绕过浏览器自己的缓存，确保装进去的是最新文件
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -19,13 +22,13 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return; // Firebase 请求不拦截
-  // 先用缓存秒开，同时联网更新缓存
-  e.respondWith(caches.open(CACHE).then(async c => {
-    const hit = await c.match(req, { ignoreSearch: true });
-    const net = fetch(req).then(res => {
-      if (res.ok) c.put(req, res.clone());
-      return res;
-    }).catch(() => hit);
-    return hit || net;
-  }));
+  // 先联网取最新（不用浏览器旧缓存），失败了（没网）再用本机缓存
+  e.respondWith(
+    fetch(req, { cache: 'no-cache' })
+      .then(res => {
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        return res;
+      })
+      .catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('index.html')))
+  );
 });
