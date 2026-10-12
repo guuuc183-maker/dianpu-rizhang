@@ -1,5 +1,5 @@
 // 离线缓存：没网也能打开 App；有新版本时后台更新，下次打开生效
-const CACHE = 'rizhang-v3';
+const CACHE = 'rizhang-v4';
 const SHELL = [
   './', 'index.html', 'app.css', 'config.js', 'manifest.webmanifest',
   'main.js', 'db.js', 'stats.js', 'chart.js', 'firebase.js',
