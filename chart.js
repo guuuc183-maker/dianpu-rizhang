@@ -3,7 +3,7 @@ const PAD_L = 38, PAD_R = 6, PAD_T = 14, PAD_B = 26;
 function colors() {
   const cs = getComputedStyle(document.documentElement);
   const v = n => cs.getPropertyValue(n).trim();
-  return { cur: v('--accent') || '#E0193A', cmp: v('--chart-cmp') || '#F6B3BF', grid: v('--chart-grid') || '#eee', text: v('--chart-text') || '#888' };
+  return { cur: v('--chart-cur') || v('--accent') || '#2EE6A0', cmp: v('--chart-cmp') || '#F6B3BF', grid: v('--chart-grid') || '#eee', text: v('--chart-text') || '#888' };
 }
 
 const money = n => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
@@ -23,7 +23,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 export class BarChart {
   constructor(el, opts = {}) {
     this.el = el;
-    this.opts = Object.assign({ height: 200, minGroup: 0, legendA: '今年', legendB: '去年', hint: '点柱子查看金额' }, opts);
+    this.opts = Object.assign({ height: 200, minGroup: 0, legendA: '今年', legendB: '去年', hint: '' }, opts);
     el.classList.add('chart');
     el.innerHTML = '<div class="chart-head"><div class="chart-tip"></div><div class="chart-legend"></div></div>' +
       '<div class="chart-scroll"><canvas></canvas></div>';
@@ -43,6 +43,21 @@ export class BarChart {
     if (opts) Object.assign(this.opts, opts);
     this.sel = -1;
     this.layout(true);
+    this.animate();
+  }
+
+  // 柱子从下往上长出来（一根接一根）
+  animate() {
+    cancelAnimationFrame(this.raf);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || !this.W) { this.p = 1; this.draw(); return; }
+    const t0 = performance.now(), dur = 850;
+    const tick = t => {
+      this.p = Math.min((t - t0) / dur, 1);
+      this.draw();
+      if (this.p < 1) this.raf = requestAnimationFrame(tick);
+    };
+    this.p = 0;
+    this.raf = requestAnimationFrame(tick);
   }
 
   layout(scrollToFocus) {
@@ -79,10 +94,12 @@ export class BarChart {
     const { W, H } = this;
     const dpr = window.devicePixelRatio || 1;
     const canvas = this.canvas;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+    }
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -91,7 +108,10 @@ export class BarChart {
     const d = this.data, vals = d.values, cmp = d.compare, hasCompare = this.hasCompare;
     const n = Math.max(d.labels.length, 1);
     const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
-    const font = s => s + 'px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+    const font = s => '600 ' + (s + 1) + 'px "BC", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+    const P = this.p == null ? 1 : this.p;
+    const ease = x => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+    const kOf = i => ease((P - 0.4 * i / n) / 0.6);
 
     let max = 0;
     vals.forEach(v => { if (v > max) max = v; });
@@ -116,9 +136,9 @@ export class BarChart {
     const bw = hasCompare ? Math.min(gw * 0.36, 16) : Math.min(gw * 0.6, 26);
     const sel = this.sel;
     const yOf = v => PAD_T + plotH * (1 - Math.max(v, 0) / top);
-    const bar = (x, v, color) => {
-      if (!(v > 0)) return;
-      const y = yOf(v);
+    const bar = (x, v, color, k) => {
+      if (!(v > 0) || k <= 0) return;
+      const y = yOf(v * k);
       const h = Math.max(PAD_T + plotH - y, 1);
       const rr = Math.min(3, bw / 2, h);
       ctx.fillStyle = color;
@@ -140,8 +160,9 @@ export class BarChart {
     for (let i = 0; i < n; i++) {
       const cx = PAD_L + gw * (i + 0.5);
       ctx.globalAlpha = sel >= 0 && sel !== i ? 0.45 : 1;
-      if (hasCompare) { bar(cx - bw - 1, cmp[i], C_CMP); bar(cx + 1, vals[i], C_CUR); }
-      else bar(cx - bw / 2, vals[i], C_CUR);
+      const k = kOf(i);
+      if (hasCompare) { bar(cx - bw - 1, cmp[i], C_CMP, k); bar(cx + 1, vals[i], C_CUR, k); }
+      else bar(cx - bw / 2, vals[i], C_CUR, k);
     }
     ctx.globalAlpha = 1;
 
@@ -151,7 +172,7 @@ export class BarChart {
       ctx.textBaseline = 'bottom';
       ctx.fillStyle = C.text;
       for (let i = 0; i < n; i++) {
-        if (!(vals[i] > 0)) continue;
+        if (!(vals[i] > 0) || kOf(i) < 1) continue;
         const cx = PAD_L + gw * (i + 0.5) + (hasCompare ? 1 + bw / 2 : 0);
         ctx.fillText(short(vals[i]), cx, yOf(vals[i]) - 2);
       }

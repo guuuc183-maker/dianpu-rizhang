@@ -1,9 +1,9 @@
 // 离线缓存：有网时总是取最新版本，没网时用手机上的缓存，保证离线也能打开
-const CACHE = 'rizhang-v12';
+const CACHE = 'rizhang-v13';
 const SHELL = [
   './', 'index.html', 'app.css', 'config.js', 'manifest.webmanifest',
   'main.js', 'db.js', 'stats.js', 'chart.js', 'firebase.js', 'holidays.js', 'xlsx.js',
-  'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
+  'bc-600.woff2', 'bc-700.woff2', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
 ];
 
 self.addEventListener('install', e => {

@@ -10,6 +10,54 @@ const pad = n => (n < 10 ? '0' : '') + n;
 const int = n => Math.round(Number(n) || 0).toLocaleString('en-US');
 const f2 = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const initial = s => (String(s || '').trim()[0] || '?').toUpperCase();
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 数字滚动到新值
+function setNum(el, v, animate) {
+  const from = el._v == null ? 0 : el._v;
+  el._v = v;
+  cancelAnimationFrame(el._raf);
+  const box = el.parentElement, len = f2(v).length;
+  if (box && box.classList.contains('amount')) { box.classList.toggle('s1', len > 9 && len <= 11); box.classList.toggle('s2', len > 11); }
+  if (!animate || from === v || reduceMotion || document.hidden) { el.textContent = f2(v); return; }
+  const t0 = performance.now(), dur = 650;
+  const step = t => {
+    const p = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = f2(from + (v - from) * e);
+    if (p < 1) el._raf = requestAnimationFrame(step); else el.textContent = f2(v);
+  };
+  el._raf = requestAnimationFrame(step);
+}
+// 圆环：白色=现金，蓝色=刷卡
+const RING_C = 2 * Math.PI * 106;
+function setRing(cash, card) {
+  const tot = cash + card, rc = $('ring-cash'), rk = $('ring-card');
+  const both = cash > 0 && card > 0, gap = both ? 17 : 0;
+  const lc = tot ? cash / tot * RING_C : 0, lk = tot ? card / tot * RING_C : 0;
+  rc.style.strokeDasharray = Math.max(lc - gap, 0.01) + ' ' + RING_C;
+  rc.style.opacity = cash > 0 ? 1 : 0;
+  rk.style.strokeDasharray = Math.max(lk - gap, 0.01) + ' ' + RING_C;
+  rk.style.strokeDashoffset = -lc;
+  rk.style.opacity = card > 0 ? 1 : 0;
+  $('rl-cash').textContent = tot ? Math.round(cash / tot * 100) + '%' : '—';
+  $('rl-card').textContent = tot ? Math.round(card / tot * 100) + '%' : '—';
+}
+function setMeter(id, a, b) {
+  const el = $(id); if (!el) return;
+  el.style.width = (a && b ? Math.min(a / b, 1) * 100 : 0) + '%';
+  el.classList.toggle('full', !!(a && b && a >= b));
+}
+// 分段按钮的滑块
+function thumbify(box) {
+  const th = document.createElement('span'); th.className = 'thumb'; box.prepend(th);
+  const place = () => {
+    const on = box.querySelector('button.on');
+    if (!on || !box.offsetWidth) return;
+    th.style.left = on.offsetLeft + 'px'; th.style.width = on.offsetWidth + 'px';
+  };
+  new MutationObserver(place).observe(box, { subtree: true, attributes: true, attributeFilter: ['class', 'hidden'] });
+  new ResizeObserver(place).observe(box);
+  place();
+}
 function hm(t) { const d = new Date(t); return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 
 // ---------- 状态 ----------
@@ -346,7 +394,7 @@ function renderEntryInfo() {
   $('d-prev').disabled = !isFull(cur) && d <= S.addDays(t, -1);
   const hd = S.holiday(d);
   $('d-holiday').hidden = !hd;
-  $('d-holiday').textContent = '🎉 ' + hd;
+  $('d-holiday').textContent = hd;
   const r = curRecs()[d];
   $('d-status').textContent = r ? '已记录 · ' + (r.by ? r.by + ' · ' : '') + hm(r.at) : '还没记录';
   $('btn-del').hidden = !r;
@@ -357,13 +405,15 @@ function renderEntryInfo() {
     $('mo-cur').textContent = f2(mv.cur);
     $('mo-pct').textContent = mv.pct;
     $('mo-pct').className = 'pct ' + (mv.cur < mv.prevSame ? 'down' : 'up');
+    setMeter('mo-bar', mv.cur, mv.prevSame);
     $('mo-sub').textContent = '去年' + (mv.isNow ? '同期 ' + int(mv.prevSame) + ' · 全月 ' : '全月 ') + int(mv.prevFull);
   }
   calc();
 }
-function calc() {
-  const tot = num($('in-cash').value) + num($('in-card').value);
-  $('t-total').textContent = f2(tot);
+function calc(animate = true) {
+  const cash = num($('in-cash').value), card = num($('in-card').value), tot = cash + card;
+  setNum($('t-total'), tot, animate);
+  setRing(cash, card);
   if (!cur || !isFull(cur)) return;
   useShopData();
   const ly = S.lastYearToday(entry.date);
@@ -384,10 +434,11 @@ function calc() {
     const p = $(id + '-pct');
     p.textContent = val && tot ? S.pct(tot, val) : '';
     p.className = 'pct ' + (tot < val ? 'down' : 'up');
+    setMeter(id + '-bar', tot, val);
   };
   put('ly', ly.lyTotal); put('lw', ly.lwTotal);
 }
-['in-cash', 'in-card', 'in-note'].forEach(id => $(id).addEventListener('input', () => { entry.editing = true; calc(); }));
+['in-cash', 'in-card', 'in-note'].forEach(id => $(id).addEventListener('input', () => { entry.editing = true; calc(false); }));
 $('in-date').onchange = e => {
   let v = e.target.value; if (!v) return;
   const t = S.today();
@@ -424,7 +475,10 @@ $('btn-save').onclick = () => {
     .catch(e => toast('保存失败：' + errText(e), 3000));
   entry.editing = false;
   document.activeElement && document.activeElement.blur();
-  toast(navigator.onLine ? '已保存 ✓' : '已存本机，有网后自动同步', 1500);
+  const sb = $('btn-save');
+  sb.classList.add('done'); sb.textContent = '已保存 ✓';
+  clearTimeout(sb._t); sb._t = setTimeout(() => { sb.classList.remove('done'); sb.textContent = '保存'; }, 1400);
+  if (!navigator.onLine) toast('已存本机，有网后自动同步', 2000);
 };
 $('btn-del').onclick = () => {
   if (!confirm('确定删除 ' + entry.date + ' 的营业额？所有手机都会删除（会留下删除记录）。')) return;
@@ -462,7 +516,7 @@ $('in-month').onchange = e => { if (e.target.value) { charts.month = e.target.va
 $('in-year').onchange = e => { charts.year = +e.target.value; renderCharts(); };
 
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
-  $('sum-cur-t').textContent = curT; $('sum-cur').textContent = f2(parseFloat(curV));
+  $('sum-cur-t').textContent = curT; setNum($('sum-cur'), parseFloat(curV) || 0, true);
   $('sum-prev-t').textContent = prevT; $('sum-prev').textContent = f2(parseFloat(prevV));
   $('sum-pct').textContent = pctV || '—'; $('sum-pct').className = 'pct big ' + (pctV ? (down ? 'down' : 'up') : '');
   $('sum-note').textContent = note || '';
@@ -503,7 +557,7 @@ function renderCharts() {
     const mv = S.monthVsLastYear(month);
     setSum(mv.isNow ? '至今' : '全月', S.money(mv.cur), '去年' + mv.m + '月' + (mv.isNow ? '同期' : ''), S.money(mv.prevSame),
       mv.pct, mv.cur < mv.prevSame, '去年' + mv.m + '月全月：' + S.money(mv.prevFull) + ' lei' + (mv.isNow && mv.remain > 0 ? '，还差 ' + S.money(mv.remain) + ' 追平' : ''));
-    $('chart-title').textContent = '每天营业额' + scopeName + ' · 红点=节假日';
+    $('chart-title').textContent = '每天营业额' + scopeName;
   } else if (tab === 'week' || tab === 'month') {
     data = tab === 'week' ? S.byWeek(year) : S.byMonth(year);
     setSum(data.isNow ? '至今' : '全年', S.money(data.cur), (year - 1) + '年' + (data.isNow ? '同期' : '全年'),
@@ -659,7 +713,7 @@ function paintTheme() {
   const t = effectiveTheme();
   document.querySelectorAll('#theme-toggle button').forEach(b => b.classList.toggle('on', b.dataset.th === t));
   const meta = document.querySelector('meta[name=theme-color]');
-  if (meta) meta.content = t === 'dark' ? '#000000' : '#F2F2F7';
+  if (meta) meta.content = t === 'dark' ? '#07090B' : '#F1F3F5';
   mainChart.redraw(); wdChart.redraw();
 }
 $('theme-toggle').onclick = e => {
@@ -669,7 +723,9 @@ $('theme-toggle').onclick = e => {
   paintTheme();
 };
 darkMQ.addEventListener && darkMQ.addEventListener('change', paintTheme);
+['scope-seg', 'chart-seg', 'setup-seg', 'theme-toggle'].forEach(id => thumbify($(id)));
 paintTheme();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { mainChart.redraw(); wdChart.redraw(); });
 
 // 安装到主屏幕提示
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;

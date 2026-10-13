@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#F2F2F7">
+<meta name="theme-color" content="#07090B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,21 +19,21 @@
 
 <!-- 加载中 -->
 <section id="s-loading" class="screen center-screen">
-  <div class="logo">账</div>
-  <div class="muted">加载中…</div>
+  <div class="brand pulse">店铺日账</div>
+  <div class="loader"><i></i></div>
 </section>
 
 <!-- 未配置 -->
 <section id="s-config" class="screen center-screen" hidden>
-  <div class="logo">账</div>
+  <div class="brand">店铺日账</div>
   <p>还没配置 Firebase。<br>请按「使用说明」把配置填进 <b>config.js</b>。</p>
 </section>
 
 <!-- 登录 -->
 <section id="s-login" class="screen" hidden>
   <div class="intro">
-    <div class="logo">账</div>
-    <h1>店铺日账</h1>
+    <div class="brand">店铺日账</div>
+    <div class="en">DAILY REVENUE</div>
     <p class="muted">每日营业额 · 多台手机一起记</p>
   </div>
   <div class="card">
@@ -79,13 +79,28 @@
 
   <!-- 记账 -->
   <main id="v-entry" class="view">
-    <section class="balance">
+    <section class="balance hero">
       <div class="datenav">
         <button class="arrow" id="d-prev" aria-label="前一天"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></button>
         <label class="datepick"><span id="d-text"></span><input type="date" id="in-date"></label>
         <button class="arrow" id="d-next" aria-label="后一天"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></button>
       </div>
-      <div class="amount"><span id="t-total">0.00</span><small>lei</small></div>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="ring-bg" cx="120" cy="120" r="106"/>
+          <circle class="ring-arc cash" id="ring-cash" cx="120" cy="120" r="106"/>
+          <circle class="ring-arc cardc" id="ring-card" cx="120" cy="120" r="106"/>
+        </svg>
+        <div class="ring-in">
+          <div class="micro">营业额</div>
+          <div class="amount num"><span id="t-total">0.00</span></div>
+          <div class="unit">LEI</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="dot cash"></i>现金 <b class="num" id="rl-cash">—</b></span>
+        <span><i class="dot cardc"></i>刷卡 <b class="num" id="rl-card">—</b></span>
+      </div>
       <div class="chips">
         <span class="chip red" id="d-holiday" hidden></span>
         <span class="chip" id="vs-chip" hidden></span>
@@ -93,10 +108,10 @@
       <div class="status" id="d-status"></div>
     </section>
 
-    <div class="card">
-      <label class="lrow"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg></span><span class="lt">现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
-      <label class="lrow"><span class="ricon r-blue"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg></span><span class="lt">刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
-      <label class="lrow"><span class="ricon r-amber"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5"/><path d="M8.5 13h7M8.5 16.5h5"/></svg></span><span class="lt">备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
+    <div class="card inputs">
+      <label class="lrow irow"><i class="vbar cash"></i><span class="lt">现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="lrow irow"><i class="vbar cardc"></i><span class="lt">刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="lrow irow"><i class="vbar note"></i><span class="lt">备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
     </div>
     <button class="btn wide" id="btn-save">保存</button>
     <div class="links">
@@ -108,9 +123,9 @@
 
     <div class="card full-only">
       <div class="cardhead">对比</div>
-      <div class="lrow static"><span class="ricon r-purple"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span class="lt grow"><span id="ly-date">去年今天</span><small id="ly-sub"></small></span><span class="rv"><b id="ly-val">—</b><i class="pct" id="ly-pct"></i></span></div>
-      <div class="lrow static"><span class="ricon r-blue"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7"/><path d="M20 4v4.7h-4.7"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3"/><path d="M4 20v-4.7h4.7"/></svg></span><span class="lt grow"><span id="lw-date">去年同星期</span><small id="lw-sub"></small></span><span class="rv"><b id="lw-val">—</b><i class="pct" id="lw-pct"></i></span></div>
-      <div class="lrow static"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17l6-6 4 4 7-7"/><path d="M15 8h5.5v5.5"/></svg></span><span class="lt grow"><span id="mo-cur-t">本月至今</span><small id="mo-sub"></small></span><span class="rv"><b id="mo-cur">—</b><i class="pct" id="mo-pct"></i></span></div>
+      <div class="lrow static cmp"><span class="lt grow"><span id="ly-date">去年今天</span><small id="ly-sub"></small></span><span class="rv"><b id="ly-val">—</b><i class="pct" id="ly-pct"></i></span><div class="meter"><i id="ly-bar"></i></div></div>
+      <div class="lrow static cmp"><span class="lt grow"><span id="lw-date">去年同星期</span><small id="lw-sub"></small></span><span class="rv"><b id="lw-val">—</b><i class="pct" id="lw-pct"></i></span><div class="meter"><i id="lw-bar"></i></div></div>
+      <div class="lrow static cmp"><span class="lt grow"><span id="mo-cur-t">本月至今</span><small id="mo-sub"></small></span><span class="rv"><b id="mo-cur">—</b><i class="pct" id="mo-pct"></i></span><div class="meter"><i id="mo-bar"></i></div></div>
     </div>
 
     <div class="card full-only" id="recent-card" hidden>
@@ -137,7 +152,7 @@
         <label class="picker" id="pick-year" hidden><select id="in-year"></select><span id="year-text"></span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></label>
         <span id="sum-cur-t"></span>
       </div>
-      <div class="amount"><span id="sum-cur">0.00</span><small>lei</small></div>
+      <div class="amount num big"><span id="sum-cur">0.00</span><small>LEI</small></div>
       <div class="chips"><span class="chip" id="vs2"><span id="sum-prev-t"></span> <b id="sum-prev"></b> <i class="pct" id="sum-pct"></i></span></div>
       <div class="status" id="sum-note"></div>
     </section>
@@ -148,9 +163,9 @@
     </div>
     <div class="card" id="card-mvs" hidden>
       <div class="cardhead" id="mvs-title"></div>
-      <div class="lrow static"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17l6-6 4 4 7-7"/><path d="M15 8h5.5v5.5"/></svg></span><span class="lt grow" id="mvs-cur-t"></span><span class="rv"><b id="mvs-cur"></b></span></div>
-      <div class="lrow static"><span class="ricon r-purple"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span class="lt grow" id="mvs-same-t"></span><span class="rv"><b id="mvs-same"></b><i class="pct" id="mvs-pct"></i></span></div>
-      <div class="lrow static"><span class="ricon r-gray"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span class="lt grow" id="mvs-full-t"></span><span class="rv"><b id="mvs-full"></b></span></div>
+      <div class="lrow static cmp"><span class="lt grow" id="mvs-cur-t"></span><span class="rv"><b id="mvs-cur"></b></span></div>
+      <div class="lrow static cmp"><span class="lt grow" id="mvs-same-t"></span><span class="rv"><b id="mvs-same"></b><i class="pct" id="mvs-pct"></i></span></div>
+      <div class="lrow static cmp"><span class="lt grow" id="mvs-full-t"></span><span class="rv"><b id="mvs-full"></b></span></div>
     </div>
     <div class="card" id="card-wd" hidden>
       <div class="cardhead">星期几日均</div>
