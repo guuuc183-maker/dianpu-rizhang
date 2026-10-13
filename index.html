@@ -71,13 +71,13 @@
 <!-- 主界面 -->
 <section id="s-app" class="screen" hidden>
   <header class="topbar">
-    <button class="shopname" id="hdr-shop"><span id="hdr-shop-name"></span> <i id="hdr-caret">▾</i></button>
+    <button class="shopname" id="hdr-shop"><span id="hdr-shop-name"></span><i id="hdr-caret">▾</i></button>
     <div class="sync" id="hdr-sync"></div>
   </header>
 
   <!-- 记账 -->
   <main id="v-entry" class="view">
-    <div class="card">
+    <div class="card datecard">
       <div class="datebar">
         <button class="arrow" id="d-prev" aria-label="前一天">‹</button>
         <label class="datepick">
@@ -86,44 +86,32 @@
         </label>
         <button class="arrow" id="d-next" aria-label="后一天">›</button>
       </div>
-      <div class="holiday center" id="d-holiday" hidden></div>
-      <div class="muted small center" id="d-status"></div>
+      <div class="chip" id="d-holiday" hidden></div>
+      <div class="status" id="d-status"></div>
     </div>
 
-    <div class="card">
-      <label class="row"><span>现金 Numerar</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0.00" autocomplete="off"></label>
-      <label class="row"><span>刷卡 Card</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0.00" autocomplete="off"></label>
-      <label class="row"><span>备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100"></label>
-    </div>
-
-    <div class="card center">
-      <div class="label">当天合计</div>
-      <div class="big"><span id="t-total">0.00</span> lei</div>
+    <div class="card inputs">
+      <label class="row"><span>现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="row"><span>刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="row"><span>备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
+      <div class="totalrow"><span>合计</span><span class="total"><b id="t-total">0.00</b> lei</span></div>
     </div>
 
     <button class="btn wide" id="btn-save">保存</button>
 
-    <div class="card full-only">
-      <div class="label">去年今日</div>
-      <div class="row"><span id="ly-date"></span><span><b id="ly-val"></b><i class="pct" id="ly-pct"></i></span></div>
-      <div class="row"><span id="lw-date"></span><span><b id="lw-val"></b><i class="pct" id="lw-pct"></i></span></div>
-      <div class="muted small">开店看星期几影响很大，第二行对比更准</div>
+    <div class="card cmp full-only">
+      <div class="row"><span id="ly-date"></span><span class="val"><b id="ly-val"></b><i class="pct" id="ly-pct"></i></span></div>
+      <div class="row"><span id="lw-date"></span><span class="val"><b id="lw-val"></b><i class="pct" id="lw-pct"></i></span></div>
+      <div class="row"><span id="mo-cur-t"></span><span class="val"><b id="mo-cur"></b><i class="pct" id="mo-pct"></i></span></div>
+      <div class="sub" id="mo-sub"></div>
     </div>
 
-    <div class="card full-only" id="card-month">
-      <div class="label" id="mo-title"></div>
-      <div class="row"><span id="mo-cur-t"></span><b id="mo-cur"></b></div>
-      <div class="row"><span id="mo-same-t"></span><span><b id="mo-same"></b><i class="pct" id="mo-pct"></i></span></div>
-      <div class="row"><span id="mo-full-t"></span><b id="mo-full"></b></div>
+    <div class="links">
+      <a id="log-toggle" class="full-only" hidden></a>
+      <a id="btn-del" class="danger" hidden>删除这一天</a>
     </div>
-
-    <div class="card full-only" id="card-log" hidden>
-      <div class="label">这一天的修改记录</div>
-      <div id="day-logs"></div>
-    </div>
-
-    <button class="btn light wide" id="btn-del" hidden>删除这一天</button>
-    <p class="center muted small staff-only" hidden>你是「店员」，只能记今天和昨天的营业额</p>
+    <div class="card full-only" id="card-log" hidden><div id="day-logs"></div></div>
+    <p class="hint staff-only">你是店员，只能记今天和昨天的营业额</p>
   </main>
 
   <!-- 图表 -->
@@ -133,75 +121,79 @@
       <button data-s="all" id="scope-all">全部店铺合计</button>
     </div>
     <div class="seg" id="chart-seg">
-      <button data-t="day" class="on">每天</button>
-      <button data-t="week">每周</button>
-      <button data-t="month">每月</button>
-      <button data-t="year">每年</button>
-      <button data-t="wd">星期</button>
+      <button data-t="day" class="on">日</button>
+      <button data-t="week">周</button>
+      <button data-t="month">月</button>
+      <button data-t="year">年</button>
     </div>
     <div class="card">
-      <label class="row" id="pick-month"><span>月份</span><input type="month" id="in-month"></label>
-      <label class="row" id="pick-year" hidden><span>年份</span><select id="in-year"></select></label>
+      <div class="sumhead">
+        <label class="picker" id="pick-month"><input type="month" id="in-month"><span id="month-text"></span> ▾</label>
+        <label class="picker" id="pick-year" hidden><select id="in-year"></select><span id="year-text"></span> ▾</label>
+      </div>
       <div class="sum">
         <div><div class="label" id="sum-cur-t"></div><div class="big" id="sum-cur"></div></div>
         <div class="right"><div class="label" id="sum-prev-t"></div><div class="prev" id="sum-prev"></div><i class="pct" id="sum-pct"></i></div>
       </div>
-      <div class="muted small" id="sum-note"></div>
+      <div class="sub" id="sum-note"></div>
     </div>
     <div class="card">
       <div class="ctitle" id="chart-title"></div>
       <div id="chart-main"></div>
     </div>
-    <div class="card" id="card-mvs" hidden>
+    <div class="card cmp" id="card-mvs" hidden>
       <div class="ctitle" id="mvs-title"></div>
-      <div class="row"><span id="mvs-cur-t"></span><b id="mvs-cur"></b></div>
-      <div class="row"><span id="mvs-same-t"></span><span><b id="mvs-same"></b><i class="pct" id="mvs-pct"></i></span></div>
-      <div class="row"><span id="mvs-full-t"></span><b id="mvs-full"></b></div>
+      <div class="row"><span id="mvs-cur-t"></span><span class="val"><b id="mvs-cur"></b></span></div>
+      <div class="row"><span id="mvs-same-t"></span><span class="val"><b id="mvs-same"></b><i class="pct" id="mvs-pct"></i></span></div>
+      <div class="row"><span id="mvs-full-t"></span><span class="val"><b id="mvs-full"></b></span></div>
     </div>
-    <button class="btn wide" id="btn-export">导出 Excel</button>
-    <div class="card" id="day-list"></div>
+    <div class="card" id="card-wd" hidden>
+      <div class="ctitle">星期几日均营业额</div>
+      <div class="sub" id="wd-note"></div>
+      <div id="chart-wd"></div>
+    </div>
+    <div class="card list" id="day-list"></div>
+    <div class="links center"><a id="btn-export">导出 Excel</a></div>
   </main>
 
   <!-- 店铺 -->
   <main id="v-shop" class="view" hidden>
-    <div class="card">
-      <div class="label">店铺</div>
+    <div class="card shophead">
       <div class="shoptitle"><span id="sh-name"></span> <a id="lnk-rename" hidden>改名</a></div>
-      <div class="muted small" id="sh-role"></div>
+      <div class="sub" id="sh-role"></div>
     </div>
-    <div class="card full-only">
-      <div class="label">邀请码（新加入的人默认是「店员」，你可以在下面改成「家人」）</div>
+
+    <div class="card full-only invite">
+      <div class="label">邀请码</div>
       <div class="code" id="sh-code"></div>
       <div class="btnrow">
         <button class="btn mini" id="btn-invite">复制邀请消息</button>
-        <button class="btn mini light" id="btn-recode" hidden>更换邀请码</button>
+        <button class="btn mini ghost" id="btn-recode" hidden>换一个</button>
       </div>
+      <div class="sub">新加入的人默认是「店员」，可以在下面改成「家人」</div>
     </div>
+
     <div class="card full-only">
       <div class="label" id="sh-members-t"></div>
       <div id="sh-members"></div>
-      <div class="muted small">家人：能看全部数据和图表；店员：只能记今天和昨天</div>
     </div>
-    <div class="card full-only">
-      <div class="label">最近修改记录</div>
-      <div id="recent-logs"></div>
+
+    <div class="card menu">
+      <a class="lrow full-only" id="logs-toggle2"><span>最近修改记录</span><i>›</i></a>
+      <div id="recent-logs" hidden></div>
+      <a class="lrow full-only" id="btn-export2"><span>导出全部数据（Excel）</span><span class="muted" id="sh-count"></span><i>›</i></a>
+      <a class="lrow" id="btn-switch"><span>切换 / 新建 / 加入店铺</span><i>›</i></a>
+      <a class="lrow danger" id="btn-leave" hidden><span>退出这家店铺</span><i>›</i></a>
+      <a class="lrow" id="btn-logout"><span>退出登录</span><span class="muted small" id="sh-email"></span><i>›</i></a>
     </div>
-    <div class="card">
-      <div class="row full-only"><span>记录天数</span><span id="sh-count"></span></div>
-      <div class="row"><span>同步状态</span><span id="sh-sync"></span></div>
-      <div class="row"><span>我的账号</span><span id="sh-email" class="small"></span></div>
-    </div>
-    <button class="btn wide full-only" id="btn-export2">导出全部数据（Excel）</button>
-    <button class="btn light wide" id="btn-switch">切换 / 新建 / 加入其他店铺</button>
-    <button class="btn light wide" id="btn-leave" hidden>退出这家店铺</button>
-    <button class="btn light wide" id="btn-logout">退出登录</button>
-    <p class="center muted small" id="install-tip"></p>
+    <p class="hint"><span id="sh-sync"></span></p>
+    <p class="hint" id="install-tip"></p>
   </main>
 
   <nav class="tabbar">
-    <button data-v="entry" class="on"><i>✎</i>记账</button>
-    <button data-v="charts" class="full-only"><i>▥</i>图表</button>
-    <button data-v="shop"><i>⌂</i>店铺</button>
+    <button data-v="entry" class="on"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg><span>记账</span></button>
+    <button data-v="charts" class="full-only"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16v-8"/></svg><span>图表</span></button>
+    <button data-v="shop"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5 11v9h14v-9"/><path d="M10 20v-5h4v5"/></svg><span>店铺</span></button>
   </nav>
 </section>
 

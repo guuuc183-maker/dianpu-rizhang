@@ -295,15 +295,27 @@ const useShopData = () => S.setRecords(curRecs());
 
 // ---------- 记账 ----------
 const entry = { date: '', editing: false };
+let logOpen = false;
+$('log-toggle').onclick = () => {
+  logOpen = !logOpen;
+  $('card-log').hidden = !logOpen;
+  $('log-toggle').textContent = $('log-toggle').textContent.replace(/[▾▴]$/, logOpen ? '▴' : '▾');
+};
+// 回车跳到下一个输入框
+$('in-cash').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('in-card').focus(); } });
+$('in-card').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('in-note').focus(); } });
+$('in-note').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('btn-save').click(); } });
 function setDate(d) {
   entry.date = d; entry.editing = false;
   $('in-date').value = d;
   fillForm(); renderEntryInfo();
   if (dayLogUnsub) { dayLogUnsub(); dayLogUnsub = null; }
-  $('card-log').hidden = true;
+  logOpen = false;
+  $('card-log').hidden = true; $('log-toggle').hidden = true;
   if (cur && isFull(cur)) {
     dayLogUnsub = db.watchDayLogs(cur, d, logs => {
-      $('card-log').hidden = !logs.length;
+      $('log-toggle').hidden = !logs.length;
+      $('log-toggle').textContent = '修改记录（' + logs.length + '）' + (logOpen ? ' ▴' : ' ▾');
       $('day-logs').innerHTML = logs.map(logHtml).join('');
     });
   }
@@ -332,19 +344,15 @@ function renderEntryInfo() {
   $('d-holiday').hidden = !hd;
   $('d-holiday').textContent = '🎉 ' + hd;
   const r = curRecs()[d];
-  $('d-status').textContent = r ? '已记录 · ' + (r.by || '') + ' ' + hm(r.at) + '，修改后保存会覆盖' : '';
+  $('d-status').textContent = r ? '已记录 · ' + (r.by ? r.by + ' · ' : '') + hm(r.at) : '还没记录';
   $('btn-del').hidden = !r;
   if (isFull(cur)) {
     const mv = S.monthVsLastYear(d.slice(0, 7));
-    $('mo-title').textContent = mv.m + '月 vs 去年' + mv.m + '月';
-    $('mo-cur-t').textContent = mv.y + '年' + mv.m + '月' + (mv.isNow ? '至今' : '');
-    $('mo-cur').textContent = S.money(mv.cur) + ' lei';
-    $('mo-same-t').textContent = (mv.y - 1) + '年' + mv.m + '月' + (mv.isNow ? '同期' : '');
-    $('mo-same').textContent = S.money(mv.prevSame) + ' lei';
+    $('mo-cur-t').textContent = mv.m + '月' + (mv.isNow ? '至今' : '合计');
+    $('mo-cur').textContent = S.money(mv.cur);
     $('mo-pct').textContent = mv.pct;
     $('mo-pct').className = 'pct ' + (mv.cur < mv.prevSame ? 'down' : 'up');
-    $('mo-full-t').textContent = (mv.y - 1) + '年' + mv.m + '月全月';
-    $('mo-full').textContent = S.money(mv.prevFull) + ' lei';
+    $('mo-sub').textContent = '去年' + mv.m + '月' + (mv.isNow ? '同期 ' + S.money(mv.prevSame) + ' · 全月 ' : '全月 ') + S.money(mv.prevFull);
   }
   calc();
 }
@@ -355,10 +363,10 @@ function calc() {
   useShopData();
   const ly = S.lastYearToday(entry.date);
   const lyh = S.holiday(ly.lyDate), lwh = S.holiday(ly.lwDate);
-  $('ly-date').innerHTML = ly.lyDate + ' ' + ly.lyWeekday + (lyh ? '<span class="hol">' + esc(lyh.split(' ')[0]) + '</span>' : '');
-  $('lw-date').innerHTML = '去年同一个' + ly.lwWeekday + ' <span class="muted small">' + ly.lwDate + '</span>' + (lwh ? '<span class="hol">' + esc(lwh.split(' ')[0]) + '</span>' : '');
+  $('ly-date').innerHTML = '去年今天 <span class="muted small">' + ly.lyDate.slice(5) + ' ' + ly.lyWeekday + '</span>' + (lyh ? '<span class="hol">' + esc(lyh.split(' ')[0]) + '</span>' : '');
+  $('lw-date').innerHTML = '去年同一个' + ly.lwWeekday + ' <span class="muted small">' + ly.lwDate.slice(5) + '</span>' + (lwh ? '<span class="hol">' + esc(lwh.split(' ')[0]) + '</span>' : '');
   const put = (id, val) => {
-    $(id + '-val').textContent = val === null ? '没有记录' : S.money(val) + ' lei';
+    $(id + '-val').textContent = val === null ? '—' : S.money(val);
     const p = $(id + '-pct');
     p.textContent = val && tot ? S.pct(tot, val) : '';
     p.className = 'pct ' + (tot < val ? 'down' : 'up');
@@ -383,7 +391,7 @@ $('btn-save').onclick = () => {
     .catch(e => toast('保存失败：' + errText(e), 3000));
   entry.editing = false;
   document.activeElement && document.activeElement.blur();
-  toast(navigator.onLine ? '已保存 ✓' : '已存本机，有网后自动同步');
+  toast(navigator.onLine ? '已保存 ✓' : '已存本机，有网后自动同步', 1500);
 };
 $('btn-del').onclick = () => {
   if (!confirm('确定删除 ' + entry.date + ' 的营业额？所有手机都会删除（会留下删除记录）。')) return;
@@ -395,6 +403,7 @@ $('btn-del').onclick = () => {
 // ---------- 图表 ----------
 const charts = { tab: 'day', scope: 'shop', month: S.today().slice(0, 7), year: +S.today().slice(0, 4) };
 const mainChart = new BarChart($('chart-main'), { height: 220 });
+const wdChart = new BarChart($('chart-wd'), { height: 180 });
 $('in-month').value = charts.month;
 $('in-month').max = charts.month;
 
@@ -449,7 +458,10 @@ function renderCharts() {
   let opts = '';
   for (let y = thisYear; y >= first; y--) opts += `<option value="${y}"${y === year ? ' selected' : ''}>${y}</option>`;
   $('in-year').innerHTML = opts;
+  $('month-text').textContent = +month.slice(0, 4) + '年' + +month.slice(5) + '月';
+  $('year-text').textContent = year + '年';
   $('card-mvs').hidden = true;
+  $('card-wd').hidden = tab !== 'week';
   const scopeName = charts.scope === 'all' ? '（全部店铺）' : '';
   let data, opt = { minGroup: 0, legendA: '今年', legendB: '去年' };
 
@@ -466,19 +478,19 @@ function renderCharts() {
     $('chart-title').textContent = (tab === 'week' ? '每周营业额（左右滑动）' : '每月营业额') + scopeName;
     opt = { minGroup: tab === 'week' ? 26 : 0, legendA: year + '年', legendB: (year - 1) + '年' };
     if (tab === 'month') renderMvs(year === thisYear ? S.today().slice(0, 7) : year + '-12');
+    if (tab === 'week') {
+      const wd = S.byWeekday(year);
+      const bi = wd.values.indexOf(Math.max(...wd.values));
+      $('wd-note').textContent = wd.best
+        ? year + '年生意最好的是' + wd.best + '，日均 ' + S.money(wd.values[bi]) + ' lei' + (wd.compare[bi] ? '（去年' + wd.labels[bi] + ' ' + S.money(wd.compare[bi]) + '）' : '') + '。可以用来排班和安排进货。'
+        : '还没有足够的记录';
+      wdChart.set(wd, { legendA: year + '年', legendB: (year - 1) + '年' });
+    }
   } else if (tab === 'year') {
     const y = S.byMonth(thisYear);
     setSum(thisYear + '年至今', S.money(y.cur), (thisYear - 1) + '年同期', S.money(y.prev), y.pct, y.cur < y.prev, '');
     data = S.byYear();
     $('chart-title').textContent = '历年总营业额' + scopeName;
-  } else {
-    data = S.byWeekday(year);
-    const bi = data.values.indexOf(Math.max(...data.values));
-    setSum(year + '年 ' + (data.best ? data.best + '日均最高' : '日均'), S.money(data.values[bi] || 0),
-      (year - 1) + '年 ' + data.labels[bi], S.money(data.compare[bi] || 0), S.pct(data.values[bi], data.compare[bi]),
-      data.values[bi] < data.compare[bi], '按星期几算的日均营业额（只算有记录的天），可以用来排班和安排进货');
-    $('chart-title').textContent = '星期几日均营业额' + scopeName;
-    opt = { minGroup: 0, legendA: year + '年', legendB: (year - 1) + '年' };
   }
   mainChart.set(data, opt);
 
@@ -546,7 +558,7 @@ function renderShop() {
   const role = roleOf(cur), isOwner = role === 'owner';
   $('sh-name').textContent = s.name;
   $('lnk-rename').hidden = !isOwner;
-  $('sh-role').textContent = '我的身份：' + ROLE_TEXT[role] + (role === 'staff' ? '（只能记今天和昨天）' : '');
+  $('sh-role').textContent = '我的身份：' + ROLE_TEXT[role] + (role === 'staff' ? ' · 只能记今天和昨天' : '') + (mine.shopIds.length > 1 ? ' · 共 ' + mine.shopIds.length + ' 家店' : '');
   $('sh-code').textContent = s.code;
   $('btn-recode').hidden = !isOwner;
   $('btn-leave').hidden = isOwner;
@@ -607,6 +619,7 @@ $('btn-leave').onclick = async () => {
   try { await db.leave(id, user.uid); } catch (e) { toast(errText(e), 3000); return; }
   removedFrom(id);
 };
+$('logs-toggle2').onclick = () => { $('recent-logs').hidden = !$('recent-logs').hidden; };
 $('btn-logout').onclick = () => { if (confirm('确定退出登录？')) db.logout(); };
 
 // 安装到主屏幕提示
