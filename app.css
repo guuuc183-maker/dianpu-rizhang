@@ -41,8 +41,8 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body, button, a, input, label, select { touch-action: manipulation; }
-html { background: var(--bg); }
-body { margin: 0 auto; max-width: 560px; min-height: 100vh; color: var(--text);
+html { background: var(--bg); overscroll-behavior: none; }
+body { overscroll-behavior: none; margin: 0 auto; max-width: 560px; min-height: 100vh; color: var(--text);
   background: var(--glow) no-repeat, var(--bg); background-size: 100% 520px;
   font: 16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased; letter-spacing: -.15px; }
