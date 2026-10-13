@@ -322,6 +322,7 @@ a.lrow:active { opacity: .55; }
 
 body.staff .full-only { display: none !important; }
 body:not(.staff) .staff-only { display: none !important; }
+body:not(.owner) .owner-only { display: none !important; }
 
 /* ---------- 切换店铺 ---------- */
 #sheet { position: fixed; inset: 0; z-index: 30; }

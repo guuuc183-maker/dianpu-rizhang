@@ -291,6 +291,7 @@ $('sheet-new').onclick = () => { $('sheet').hidden = true; showSetup(); };
 function applyRole() {
   const staff = !isFull(cur);
   document.body.classList.toggle('staff', staff);
+  document.body.classList.toggle('owner', roleOf(cur) === 'owner');
   if (staff && view === 'charts') go('entry');
   const t = S.today();
   $('in-date').max = t;
