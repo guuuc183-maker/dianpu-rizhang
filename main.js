@@ -859,6 +859,16 @@ function exportExcel(scope) {
 }
 $('btn-export').onclick = () => exportExcel(charts.scope);
 $('btn-export2').onclick = () => exportExcel('shop');
+// 把本店全部记录复制成一段文字，给微信小程序导入用
+$('btn-copymp').onclick = async () => {
+  const m = curRecs(), records = Object.keys(m).sort().map(d => ({ date: d, cash: m[d].cash, card: m[d].card, note: m[d].note || '', by: m[d].by || '', closed: !!m[d].closed }));
+  if (!records.length) { toast('还没有记录'); return; }
+  const text = JSON.stringify({ app: 'dianpu-rizhang', shop: shops[cur].name, records });
+  try { await navigator.clipboard.writeText(text); } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  toast('已复制 ' + records.length + ' 天的记录，去小程序「店铺」页点「从网页版导入」', 3500);
+};
 
 // ---------- 店铺 ----------
 function renderShop() {
