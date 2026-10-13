@@ -85,8 +85,13 @@ const fullShops = () => mine.shopIds.filter(id => shops[id] && isFull(id));
 
 // ---------- 通用 ----------
 let toastTimer;
-function toast(msg, ms = 2000) {
+function toast(msg, ms = 2000, act, fn) {
   const t = $('toast'); t.textContent = msg; t.hidden = false;
+  if (act) {
+    const b = document.createElement('button'); b.className = 'act'; b.textContent = act;
+    b.onclick = () => { t.hidden = true; clearTimeout(toastTimer); fn(); };
+    t.appendChild(b);
+  }
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
 }
 function show(name) {
@@ -383,11 +388,12 @@ function setDate(d) {
 function logHtml(l, withDate) {
   const what = l.action === 'delete'
     ? '<span class="del">删除了</span>'
+    : l.action === 'rest' ? '<span class="warn">标记休息</span>'
     : '现金 ' + S.money(l.cash) + ' · 刷卡 ' + S.money(l.card) + (l.note ? ' · ' + esc(l.note) : '');
   return `<div class="log"><span>${withDate ? '<b>' + esc(l.date.slice(5)) + '</b> ' : ''}${what}</span><span class="who">${esc(l.by)} · ${hm(l.at)}</span></div>`;
 }
 function fillForm() {
-  const r = curRecs()[entry.date];
+  const r0 = curRecs()[entry.date], r = r0 && !r0.closed ? r0 : null;
   $('in-cash').value = r ? String(r.cash) : '';
   $('in-card').value = r ? String(r.card) : '';
   $('in-note').value = r ? r.note : '';
@@ -404,11 +410,24 @@ function renderEntryInfo() {
   $('d-holiday').hidden = !hd;
   $('d-holiday').textContent = hd;
   const r = curRecs()[d];
-  $('d-status').textContent = r ? '已记录 · ' + (r.by ? r.by + ' · ' : '') + hm(r.at) : '还没记录';
-  $('btn-del').hidden = !r;
+  const closed = !!(r && r.closed);
+  $('d-status').textContent = closed ? '这天关门休息 · ' + (r.by ? r.by + ' · ' : '') + hm(r.at)
+    : r ? '已记录 · ' + (r.by ? r.by + ' · ' : '') + hm(r.at) : '还没记录';
+  $('btn-del').hidden = !r || closed;
+  $('btn-rest').textContent = closed ? '取消休息' : '休息';
+  $('btn-rest').classList.toggle('on', closed);
+  document.querySelector('.hero').classList.toggle('closed', closed);
+  $('ring-label').textContent = closed ? '休息日' : '营业额';
   if (isFull(cur)) {
     const mv = S.monthVsLastYear(d.slice(0, 7));
     $('mo-cur-t').textContent = mv.m + '月' + (mv.isNow ? '至今' : '合计');
+    const wk = S.weekVsLast(d), isToday = d === t;
+    $('wk-cur-t').textContent = isToday ? (wk.isSun ? '本周合计' : '本周至今') : (wk.isSun ? '这一周合计' : '这一周（到' + S.weekday(d) + '）');
+    $('wk-sub').textContent = '上周同期 ' + int(wk.prev);
+    $('wk-cur').textContent = f2(wk.cur);
+    $('wk-pct').textContent = wk.prev ? wk.pct : '';
+    $('wk-pct').className = 'pct ' + (wk.cur < wk.prev ? 'down' : 'up');
+    setMeter('wk-bar', wk.cur, wk.prev);
     renderRecent();
     $('mo-cur').textContent = f2(mv.cur);
     $('mo-pct').textContent = mv.pct;
@@ -463,8 +482,8 @@ function dayHtml(r) {
   return `<div class="day" data-date="${r.date}">
     <div class="dnum${hd ? ' hd' : ''}"><b>${+r.date.slice(8)}</b><span>${S.weekday(r.date)}</span></div>
     <div class="grow"><b>${md}${hd ? '<span class="hol">' + esc(hd.split(' ')[0]) + '</span>' : ''}</b>
-      <small>现金 ${f2(r.cash)} · 刷卡 ${f2(r.card)}${r.note ? ' · ' + esc(r.note) : ''}</small></div>
-    <div class="amt2">${f2(S.total(r))}</div></div>`;
+      <small>${r.closed ? '关门' : '现金 ' + f2(r.cash) + ' · 刷卡 ' + f2(r.card) + (r.note ? ' · ' + esc(r.note) : '')}</small></div>
+    ${r.closed ? '<div class="amt2 rest">休息</div>' : '<div class="amt2">' + f2(S.total(r)) + '</div>'}</div>`;
 }
 function renderRecent() {
   const m = curRecs();
@@ -488,17 +507,36 @@ $('btn-save').onclick = () => {
   clearTimeout(sb._t); sb._t = setTimeout(() => { sb.classList.remove('done'); sb.textContent = '保存'; }, 1400);
   if (!navigator.onLine) toast('已存本机，有网后自动同步', 2000);
 };
-$('btn-del').onclick = () => {
-  if (!confirm('确定删除 ' + entry.date + ' 的营业额？所有手机都会删除（会留下删除记录）。')) return;
-  db.deleteRecord(cur, entry.date, curRecs()[entry.date], me()).catch(e => toast('删除失败：' + errText(e), 3000));
+$('btn-rest').onclick = () => {
+  const r = curRecs()[entry.date];
+  if (r && r.closed) {
+    db.deleteRecord(cur, entry.date, r, me()).catch(e => toast('操作失败：' + errText(e), 3000));
+    toast('已取消休息');
+    return;
+  }
+  if (r && S.total(r) > 0 && !confirm(entry.date + ' 已经记了 ' + f2(S.total(r)) + ' lei，标记休息会把它清零。确定吗？')) return;
+  db.restDay(cur, entry.date, me()).catch(e => toast('操作失败：' + errText(e), 3000));
   entry.editing = false;
-  toast('已删除');
+  document.activeElement && document.activeElement.blur();
+  toast(entry.date === S.today() ? '今天标记为休息' : entry.date.slice(5) + ' 标记为休息');
+};
+$('btn-del').onclick = () => {
+  const date = entry.date, shop = cur, old = curRecs()[date];
+  if (!old) return;
+  const keep = { cash: old.cash, card: old.card, note: old.note || '' };
+  db.deleteRecord(shop, date, old, me()).catch(e => toast('删除失败：' + errText(e), 3000));
+  entry.editing = false;
+  // 6 秒内可以撤销
+  toast('已删除 ' + date.slice(5), 6000, '撤销', () => {
+    db.saveRecord(shop, date, keep, me()).then(() => toast('已恢复')).catch(e => toast('恢复失败：' + errText(e), 3000));
+  });
 };
 
 // ---------- 图表 ----------
-const charts = { tab: 'day', scope: 'shop', month: S.today().slice(0, 7), year: +S.today().slice(0, 4), mon: S.today().slice(0, 7) };
+const charts = { tab: 'day', scope: 'shop', month: S.today().slice(0, 7), year: +S.today().slice(0, 4), mon: S.today().slice(0, 7), yr: +S.today().slice(0, 4) };
 const mainChart = new BarChart($('chart-main'), { height: 220, onSelect: i => {
   // 月视图：点柱子直接切到那个月
+  if (charts.tab === 'year') { const y = +mainChart.data.labels[i]; if (y) { charts.yr = y; renderCharts(); } return false; }
   if (charts.tab !== 'month') return true;
   const ym = (+charts.mon.slice(0, 4)) + '-' + pad(i + 1);
   if (ym > S.today().slice(0, 7)) return false;
@@ -534,8 +572,16 @@ function shiftMonth(ym, d) {
   while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; }
   return y + '-' + pad(m);
 }
-$('m-prev').onclick = () => { charts.mon = shiftMonth(charts.mon, -1); renderCharts(); };
-$('m-next').onclick = () => { if (charts.mon < S.today().slice(0, 7)) { charts.mon = shiftMonth(charts.mon, 1); renderCharts(); } };
+// 日 / 月 / 年 共用的「上一个 / 下一个」按钮
+function navStep(d) {
+  const nowM = S.today().slice(0, 7), nowY = +S.today().slice(0, 4);
+  if (charts.tab === 'day') { const m = shiftMonth(charts.month, d); if (m > nowM) return; charts.month = m; $('in-month').value = m; }
+  else if (charts.tab === 'month') { const m = shiftMonth(charts.mon, d); if (m > nowM) return; charts.mon = m; }
+  else if (charts.tab === 'year') { const y = charts.yr + d; if (y > nowY || y < Math.min(S.firstYear(), nowY)) return; charts.yr = y; }
+  renderCharts();
+}
+$('m-prev').onclick = () => navStep(-1);
+$('m-next').onclick = () => navStep(1);
 
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
   $('sum-cur-t').textContent = curT; setNum($('sum-cur'), parseFloat(curV) || 0, true);
@@ -563,8 +609,13 @@ function renderCharts() {
   const thisYear = +S.today().slice(0, 4);
   $('pick-month').hidden = tab !== 'day';
   $('pick-year').hidden = tab === 'day' || tab === 'year' || tab === 'month';
-  $('mnav').hidden = tab !== 'month';
-  $('period').hidden = tab === 'month';
+  $('mnav').hidden = false;
+  $('period').hidden = true;
+  const nowM = S.today().slice(0, 7);
+  $('m-prev').textContent = tab === 'year' ? '‹ 上一年' : '‹ 上月';
+  $('m-next').textContent = tab === 'year' ? '下一年 ›' : '下月 ›';
+  $('m-prev').disabled = false;
+  if (tab === 'day') { $('m-text').textContent = +month.slice(0, 4) + '年' + +month.slice(5) + '月'; $('m-next').disabled = month >= nowM; }
   const first = Math.min(S.firstYear(), thisYear);
   let opts = '';
   for (let y = thisYear; y >= first; y--) opts += `<option value="${y}"${y === year ? ' selected' : ''}>${y}</option>`;
@@ -572,7 +623,7 @@ function renderCharts() {
   $('month-text').textContent = +month.slice(0, 4) + '年' + +month.slice(5) + '月';
   $('year-text').textContent = year + '年';
   $('card-mvs').hidden = true;
-  $('card-wd').hidden = tab !== 'week';
+  $('card-wd').hidden = tab !== 'month';
   const scopeName = charts.scope === 'all' ? '（全部店铺）' : '';
   let data, opt = { minGroup: 0, legendA: '今年', legendB: '去年' };
 
@@ -594,6 +645,12 @@ function renderCharts() {
     opt = { minGroup: 0, legendA: my + '年', legendB: (my - 1) + '年' };
     $('chart-title').textContent = my + '年每月营业额' + scopeName;
     renderMvs(mon);
+    const wd = S.byWeekday(my);
+    const bi = wd.values.indexOf(Math.max(...wd.values));
+    $('wd-note').textContent = wd.best
+      ? my + '年生意最好的是' + wd.best + '，日均 ' + S.money(wd.values[bi]) + ' lei' + (wd.compare[bi] ? '（去年' + wd.labels[bi] + ' ' + S.money(wd.compare[bi]) + '）' : '') + '。可以用来排班和安排进货。'
+      : '还没有足够的记录';
+    wdChart.set(wd, { legendA: my + '年', legendB: (my - 1) + '年' });
     mainChart.set(data, opt);
     mainChart.select(mi);
     data = null;
@@ -612,10 +669,16 @@ function renderCharts() {
       wdChart.set(wd, { legendA: year + '年', legendB: (year - 1) + '年' });
     }
   } else if (tab === 'year') {
-    const y = S.byMonth(thisYear);
-    setSum(thisYear + '年至今', S.money(y.cur), (thisYear - 1) + '年同期', S.money(y.prev), y.pct, y.cur < y.prev, '');
+    const yr = charts.yr, y = S.byMonth(yr);
+    $('m-text').textContent = yr + '年';
+    $('m-next').disabled = yr >= thisYear;
+    $('m-prev').disabled = yr <= first;
+    setSum(y.isNow ? '至今' : '全年', S.money(y.cur), (yr - 1) + '年' + (y.isNow ? '同期' : '全年'), S.money(y.prev), y.pct, y.cur < y.prev, '');
     data = S.byYear();
     $('chart-title').textContent = '历年总营业额' + scopeName;
+    mainChart.set(data, opt);
+    mainChart.select(data.labels.indexOf(String(yr)));
+    data = null;
   }
   if (data) mainChart.set(data, opt);
 
@@ -677,7 +740,10 @@ function renderShop() {
   const s = shops[cur]; if (!s) return;
   const role = roleOf(cur), isOwner = role === 'owner';
   $('sh-name').textContent = s.name;
-  $('sh-avatar').textContent = initial(s.name);
+  const logo = avatars._shop;
+  if (logo) { if (!$('sh-avatar').querySelector('img') || $('sh-avatar').querySelector('img').src !== logo) $('sh-avatar').innerHTML = `<img src="${esc(logo)}" alt="">`; }
+  else $('sh-avatar').textContent = initial(s.name);
+  $('in-logo').disabled = !isOwner;
   $('lnk-rename').hidden = !isOwner;
   $('sh-role').textContent = '我是' + ROLE_TEXT[role] + (mine.shopIds.length > 1 ? ' · 共 ' + mine.shopIds.length + ' 家店' : '');
   $('sh-code').textContent = s.code;
@@ -778,6 +844,18 @@ $('in-avatar').onchange = async e => {
     toast('头像已更新');
   } catch (err) { toast('上传失败：' + errText(err), 3000); }
   row.classList.remove('busy');
+};
+$('in-logo').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f || roleOf(cur) !== 'owner') return;
+  const w = $('sh-avatar-wrap'); w.classList.add('busy');
+  try {
+    const img = await makeAvatar(f);
+    avatars._shop = img; renderShop();
+    await db.setAvatar([cur], '_shop', img);
+    toast('店铺 logo 已更新');
+  } catch (err) { toast('上传失败：' + errText(err), 3000); }
+  w.classList.remove('busy');
 };
 $('logs-toggle2').onclick = () => { $('recent-logs').hidden = !$('recent-logs').hidden; };
 $('btn-logout').onclick = () => { if (confirm('确定退出登录？')) db.logout(); };

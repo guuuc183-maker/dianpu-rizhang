@@ -39,6 +39,12 @@ function sumBetween(start, end) {
   return round(s);
 }
 
+// 本周（周一起）到 date 为止 vs 上周同期
+export function weekVsLast(date) {
+  const wd = (parse(date).getDay() + 6) % 7, mon = addDays(date, -wd);
+  const cur = sumBetween(mon, date), prev = sumBetween(addDays(mon, -7), addDays(date, -7));
+  return { cur, prev, pct: pct(cur, prev), days: wd + 1, isSun: wd === 6 };
+}
 export function pct(cur, prev) {
   if (!prev) return '';
   const p = Math.round((cur - prev) / prev * 100);
@@ -118,7 +124,7 @@ export function byYear() {
   const ys = Object.keys(map).map(Number);
   const first = ys.length ? Math.min(...ys) : now;
   const labels = [], values = [], titles = [];
-  for (let y = first; y <= now; y++) { labels.push(String(y)); values.push(round(map[y] || 0)); titles.push(y + '年全年'); }
+  for (let y = first; y <= now; y++) { labels.push(String(y)); values.push(round(map[y] || 0)); titles.push(y + (y === now ? '年至今' : '年全年')); }
   return { labels, values, titles };
 }
 
@@ -151,6 +157,7 @@ export function byWeekday(year) {
     const y = +k.slice(0, 4);
     const i = y === year ? 0 : y === year - 1 ? 1 : -1;
     if (i < 0) continue;
+    if (ALL[k].closed) continue; // 休息日不算进日均
     const w = (parse(k).getDay() + 6) % 7;
     sum[i][w] += total(ALL[k]); cnt[i][w]++;
   }
@@ -171,7 +178,8 @@ export function mergeShops(maps) {
   maps.forEach(m => {
     for (const k in m) {
       const r = m[k];
-      if (!out[k]) out[k] = { cash: 0, card: 0, note: '', by: '' };
+      if (!out[k]) out[k] = { cash: 0, card: 0, note: '', by: '', closed: !!r.closed };
+      else out[k].closed = out[k].closed && !!r.closed;
       out[k].cash = round(out[k].cash + r.cash);
       out[k].card = round(out[k].card + r.card);
     }
@@ -185,7 +193,7 @@ export function monthly() {
   for (const k in ALL) {
     const ym = k.slice(0, 7);
     if (!m[ym]) m[ym] = { cash: 0, card: 0, days: 0 };
-    m[ym].cash += ALL[k].cash || 0; m[ym].card += ALL[k].card || 0; m[ym].days++;
+    m[ym].cash += ALL[k].cash || 0; m[ym].card += ALL[k].card || 0; if (!ALL[k].closed) m[ym].days++;
   }
   return Object.keys(m).sort().map(ym => ({ ym, cash: round(m[ym].cash), card: round(m[ym].card), days: m[ym].days }));
 }
@@ -201,7 +209,7 @@ export function monthVsLastYear(month) {
   const cur = sumBetween(month + '-01', end);
   const prevSame = sumBetween(lm + '-01', lastYear(end));
   const prevFull = sumBetween(lm + '-01', lm + '-' + pad(daysInMonth(y - 1, m)));
-  const days = Object.keys(ALL).filter(k => k >= month + '-01' && k <= end).length;
+  const days = Object.keys(ALL).filter(k => k >= month + '-01' && k <= end && !ALL[k].closed).length;
   return { cur, prevSame, prevFull, pct: pct(cur, prevSame), isNow, m, y, days,
            remain: isNow ? round(prevFull - cur) : 0 };
 }

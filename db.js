@@ -164,7 +164,7 @@ export function setAvatar(shopIds, uid, img) {
 // ---------- 营业额记录 ----------
 function toRec(x) {
   return {
-    cash: x.cash || 0, card: x.card || 0, note: x.note || '', by: x.by || '',
+    cash: x.cash || 0, card: x.card || 0, note: x.note || '', by: x.by || '', closed: !!x.closed,
     at: x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : Date.now()
   };
 }
@@ -203,6 +203,15 @@ export function saveRecord(shopId, date, rec, me) {
     cash: rec.cash, card: rec.card, note: rec.note || '', by: me.name || '', updatedAt: serverTimestamp()
   });
   logEntry(b, shopId, date, 'save', rec, me);
+  return b.commit();
+}
+// 标记这一天关门休息（营业额记为 0，统计日均时不算这一天）
+export function restDay(shopId, date, me) {
+  const b = writeBatch(db);
+  b.set(doc(db, 'shops', shopId, 'records', date), {
+    cash: 0, card: 0, note: '休息', by: me.name || '', updatedAt: serverTimestamp(), closed: true
+  });
+  logEntry(b, shopId, date, 'rest', {}, me);
   return b.commit();
 }
 export function deleteRecord(shopId, date, old, me) {

@@ -91,7 +91,7 @@
           <circle class="ring-arc cardc" id="ring-card" cx="120" cy="120" r="106"/>
         </svg>
         <div class="ring-in">
-          <div class="micro">营业额</div>
+          <div class="micro" id="ring-label">营业额</div>
           <div class="amount num"><span id="t-total">0.00</span></div>
           <div class="unit">LEI</div>
         </div>
@@ -113,8 +113,9 @@
       <label class="lrow irow"><i class="vbar note"></i><span class="lt">备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
     </div>
     <button class="btn wide" id="btn-save">保存</button>
-    <div class="links">
+    <div class="links dayacts">
       <a id="log-toggle" class="full-only" hidden></a>
+      <a id="btn-rest" class="restbtn">休息</a>
       <a id="btn-del" class="danger" hidden>删除这一天</a>
     </div>
     <div class="card full-only" id="card-log" hidden><div id="day-logs"></div></div>
@@ -124,6 +125,7 @@
       <div class="cardhead">对比</div>
       <div class="lrow static cmp"><span class="lt grow"><span id="ly-date">去年今天</span><small id="ly-sub"></small></span><span class="rv"><b id="ly-val">—</b><i class="pct" id="ly-pct"></i></span><div class="meter"><i id="ly-bar"></i></div></div>
       <div class="lrow static cmp"><span class="lt grow"><span id="lw-date">去年同星期</span><small id="lw-sub"></small></span><span class="rv"><b id="lw-val">—</b><i class="pct" id="lw-pct"></i></span><div class="meter"><i id="lw-bar"></i></div></div>
+      <div class="lrow static cmp"><span class="lt grow"><span id="wk-cur-t">本周至今</span><small id="wk-sub"></small></span><span class="rv"><b id="wk-cur">—</b><i class="pct" id="wk-pct"></i></span><div class="meter"><i id="wk-bar"></i></div></div>
       <div class="lrow static cmp"><span class="lt grow"><span id="mo-cur-t">本月至今</span><small id="mo-sub"></small></span><span class="rv"><b id="mo-cur">—</b><i class="pct" id="mo-pct"></i></span><div class="meter"><i id="mo-bar"></i></div></div>
     </div>
 
@@ -142,7 +144,6 @@
       </div>
       <div class="pillrow" id="chart-seg">
         <button data-t="day" class="on">日</button>
-        <button data-t="week">周</button>
         <button data-t="month">月</button>
         <button data-t="year">年</button>
       </div>
@@ -185,7 +186,7 @@
   <!-- 店铺 -->
   <main id="v-shop" class="view" hidden>
     <section class="profile">
-      <div class="bigavatar" id="sh-avatar"></div>
+      <label class="bigavatar" id="sh-avatar-wrap"><span id="sh-avatar"></span><i class="cam" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.2"/></svg></i><input type="file" id="in-logo" accept="image/*" hidden disabled></label>
       <div class="pname" id="sh-name"></div>
       <div class="prole"><span id="sh-role"></span> <a id="lnk-rename" hidden>改名</a></div>
       <div class="stats">
