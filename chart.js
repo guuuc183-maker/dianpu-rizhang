@@ -32,6 +32,13 @@ export class BarChart {
     this.scrollEl = el.querySelector('.chart-scroll');
     this.canvas = el.querySelector('canvas');
     this.canvas.addEventListener('pointerdown', e => this.onTap(e));
+    // 电脑：鼠标移到柱子上就显示金额
+    this.canvas.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse' || !this.gw) return;
+      const i = Math.floor((e.clientX - this.canvas.getBoundingClientRect().left - PAD_L) / this.gw);
+      if (i >= 0 && i < this.n && i !== this.sel) this.select(i);
+    });
+    this.canvas.style.cursor = 'pointer';
     this.data = { labels: [], values: [], compare: [], titles: [], focus: -1 };
     this.sel = -1;
     this.ro = new ResizeObserver(() => { if (this.el.clientWidth !== this.lastW) this.layout(); });

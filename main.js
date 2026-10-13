@@ -668,6 +668,20 @@ function navStep(d) {
   renderCharts();
 }
 $('m-prev').onclick = () => navStep(-1);
+// 电脑：键盘左右箭头切换日期 / 月份（正在输入时不触发）
+document.addEventListener('keydown', e => {
+  if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') || !$('sheet').hidden || $('s-app').hidden) return;
+  const dir = e.key === 'ArrowRight' ? 1 : -1;
+  if (view === 'entry') {
+    if (dir > 0 && entry.date >= S.today()) return;
+    if (dir < 0 && $('d-prev').disabled) return;
+    setDate(S.addDays(entry.date, dir)); bump(document.querySelector('#v-entry .hero'), dir);
+  } else if (view === 'charts') {
+    if ((dir > 0 ? $('m-next') : $('m-prev')).disabled) return;
+    navStep(dir); bump(document.querySelector('#v-charts .balance'), dir);
+  }
+});
 onSwipe(document, dir => {
   if ((dir > 0 ? $('m-next') : $('m-prev')).disabled) return;
   navStep(dir); bump(document.querySelector('#v-charts .balance'), dir);
