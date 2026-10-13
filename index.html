@@ -71,174 +71,147 @@
 
 <!-- 主界面 -->
 <section id="s-app" class="screen" hidden>
-  <header class="apphead">
-    <button class="shopchip" id="hdr-shop"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5 11v9h14v-9"/><path d="M10 20v-5h4v5"/></svg><span id="hdr-shop-name"></span><i id="hdr-caret">▾</i></button>
-    <span class="syncpill" id="hdr-sync"></span>
+  <header class="topnav">
+    <button class="avatar" id="go-shop" aria-label="店铺"><span id="me-initial"></span></button>
+    <button class="shopchip" id="hdr-shop"><span id="hdr-shop-name"></span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg><i id="hdr-caret" hidden></i></button>
+    <span class="syncdot" id="hdr-sync"></span>
   </header>
 
   <!-- 记账 -->
   <main id="v-entry" class="view">
-    <h1 class="title">记账</h1>
-    <p class="subtitle" id="entry-sub">记下今天的现金和刷卡</p>
-
-    <div class="hero">
-      <div class="hero-top">
-        <div class="hero-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7" rx="5.5" ry="2.5"/><path d="M3.5 7v4c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5V7"/><path d="M9.5 16.4c.9.1 1.8.1 2.5.1 3 0 5.5-1.1 5.5-2.5V10"/><path d="M14.5 10.6c1.7-.3 3-1 3-2"/></svg></div>
-        <div>
-          <div class="hero-num"><span id="t-total">0.00</span><small>lei</small></div>
-          <div class="hero-label">当天合计</div>
-        </div>
+    <section class="balance">
+      <div class="datenav">
+        <button class="arrow" id="d-prev" aria-label="前一天"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></button>
+        <label class="datepick"><span id="d-text"></span><input type="date" id="in-date"></label>
+        <button class="arrow" id="d-next" aria-label="后一天"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></button>
       </div>
-      <div class="pills full-only">
-        <div class="pill"><span id="ly-date">去年今天</span><b id="ly-val">—</b><i class="pct" id="ly-pct"></i></div>
-        <div class="pill"><span id="lw-date">去年同星期</span><b id="lw-val">—</b><i class="pct" id="lw-pct"></i></div>
-        <div class="pill"><span id="mo-cur-t">本月至今</span><b id="mo-cur">—</b><i class="pct" id="mo-pct"></i></div>
+      <div class="amount"><span id="t-total">0.00</span><small>lei</small></div>
+      <div class="chips">
+        <span class="chip red" id="d-holiday" hidden></span>
+        <span class="chip" id="vs-chip" hidden></span>
       </div>
-      <div class="hero-foot full-only" id="mo-sub"></div>
-    </div>
-
-    <div class="section">日期</div>
-    <div class="card datecard">
-      <div class="datebar">
-        <button class="arrow" id="d-prev" aria-label="前一天">‹</button>
-        <label class="datepick">
-          <span id="d-text"></span>
-          <input type="date" id="in-date">
-        </label>
-        <button class="arrow" id="d-next" aria-label="后一天">›</button>
-      </div>
-      <div class="chip" id="d-holiday" hidden></div>
       <div class="status" id="d-status"></div>
-    </div>
+    </section>
 
-    <div class="section">营业额</div>
-    <div class="card rows">
-      <label class="irow"><span class="tile t-green"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg></span><span class="ilabel">现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
-      <label class="irow"><span class="tile t-blue"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg></span><span class="ilabel">刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
-      <label class="irow"><span class="tile t-amber"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5"/><path d="M8.5 13h7M8.5 16.5h5"/></svg></span><span class="ilabel">备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
+    <div class="card">
+      <label class="lrow"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg></span><span class="lt">现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="lrow"><span class="ricon r-blue"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg></span><span class="lt">刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="lrow"><span class="ricon r-amber"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5"/><path d="M8.5 13h7M8.5 16.5h5"/></svg></span><span class="lt">备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
     </div>
-
     <button class="btn wide" id="btn-save">保存</button>
-
     <div class="links">
       <a id="log-toggle" class="full-only" hidden></a>
       <a id="btn-del" class="danger" hidden>删除这一天</a>
     </div>
     <div class="card full-only" id="card-log" hidden><div id="day-logs"></div></div>
     <p class="hint staff-only">你是店员，只能记今天和昨天的营业额</p>
+
+    <div class="card full-only">
+      <div class="cardhead">对比</div>
+      <div class="lrow static"><span class="ricon r-purple"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span class="lt grow"><span id="ly-date">去年今天</span><small id="ly-sub"></small></span><span class="rv"><b id="ly-val">—</b><i class="pct" id="ly-pct"></i></span></div>
+      <div class="lrow static"><span class="ricon r-blue"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7"/><path d="M20 4v4.7h-4.7"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 15.3"/><path d="M4 20v-4.7h4.7"/></svg></span><span class="lt grow"><span id="lw-date">去年同星期</span><small id="lw-sub"></small></span><span class="rv"><b id="lw-val">—</b><i class="pct" id="lw-pct"></i></span></div>
+      <div class="lrow static"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17l6-6 4 4 7-7"/><path d="M15 8h5.5v5.5"/></svg></span><span class="lt grow"><span id="mo-cur-t">本月至今</span><small id="mo-sub"></small></span><span class="rv"><b id="mo-cur">—</b><i class="pct" id="mo-pct"></i></span></div>
+    </div>
+
+    <div class="card full-only" id="recent-card" hidden>
+      <div class="cardhead">最近几天 <a id="see-all">全部</a></div>
+      <div id="recent-days"></div>
+    </div>
   </main>
 
   <!-- 图表 -->
   <main id="v-charts" class="view" hidden>
-    <h1 class="title">图表</h1>
-    <p class="subtitle">和去年同期对比，生意好坏一目了然</p>
-    <div class="seg" id="scope-seg" hidden>
-      <button data-s="shop" class="on">本店</button>
-      <button data-s="all" id="scope-all">全部店铺合计</button>
-    </div>
-    <div class="seg" id="chart-seg">
-      <button data-t="day" class="on">日</button>
-      <button data-t="week">周</button>
-      <button data-t="month">月</button>
-      <button data-t="year">年</button>
-    </div>
-
-    <div class="hero">
-      <div class="hero-top">
-        <div class="hero-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16v-8"/></svg></div>
-        <div class="grow">
-          <div class="hero-num"><span id="sum-cur">0.00</span><small>lei</small></div>
-          <div class="hero-label">
-            <label class="picker" id="pick-month"><input type="month" id="in-month"><span id="month-text"></span> ▾</label>
-            <label class="picker" id="pick-year" hidden><select id="in-year"></select><span id="year-text"></span> ▾</label>
-            <span id="sum-cur-t"></span>
-          </div>
-        </div>
+    <section class="balance">
+      <div class="pillrow" id="scope-seg" hidden>
+        <button data-s="shop" class="on">本店</button>
+        <button data-s="all" id="scope-all">全部店铺</button>
       </div>
-      <div class="pills">
-        <div class="pill"><span id="sum-prev-t"></span><b id="sum-prev"></b></div>
-        <div class="pill"><span>同比</span><b><i class="pct big" id="sum-pct"></i></b></div>
+      <div class="pillrow" id="chart-seg">
+        <button data-t="day" class="on">日</button>
+        <button data-t="week">周</button>
+        <button data-t="month">月</button>
+        <button data-t="year">年</button>
       </div>
-      <div class="hero-foot" id="sum-note"></div>
-    </div>
+      <div class="period">
+        <label class="picker" id="pick-month"><input type="month" id="in-month"><span id="month-text"></span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></label>
+        <label class="picker" id="pick-year" hidden><select id="in-year"></select><span id="year-text"></span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></label>
+        <span id="sum-cur-t"></span>
+      </div>
+      <div class="amount"><span id="sum-cur">0.00</span><small>lei</small></div>
+      <div class="chips"><span class="chip" id="vs2"><span id="sum-prev-t"></span> <b id="sum-prev"></b> <i class="pct" id="sum-pct"></i></span></div>
+      <div class="status" id="sum-note"></div>
+    </section>
 
     <div class="card">
-      <div class="ctitle" id="chart-title"></div>
+      <div class="cardhead" id="chart-title"></div>
       <div id="chart-main"></div>
     </div>
-    <div class="card cmp" id="card-mvs" hidden>
-      <div class="ctitle" id="mvs-title"></div>
-      <div class="row"><span id="mvs-cur-t"></span><span class="val"><b id="mvs-cur"></b></span></div>
-      <div class="row"><span id="mvs-same-t"></span><span class="val"><b id="mvs-same"></b><i class="pct" id="mvs-pct"></i></span></div>
-      <div class="row"><span id="mvs-full-t"></span><span class="val"><b id="mvs-full"></b></span></div>
+    <div class="card" id="card-mvs" hidden>
+      <div class="cardhead" id="mvs-title"></div>
+      <div class="lrow static"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17l6-6 4 4 7-7"/><path d="M15 8h5.5v5.5"/></svg></span><span class="lt grow" id="mvs-cur-t"></span><span class="rv"><b id="mvs-cur"></b></span></div>
+      <div class="lrow static"><span class="ricon r-purple"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span class="lt grow" id="mvs-same-t"></span><span class="rv"><b id="mvs-same"></b><i class="pct" id="mvs-pct"></i></span></div>
+      <div class="lrow static"><span class="ricon r-gray"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span class="lt grow" id="mvs-full-t"></span><span class="rv"><b id="mvs-full"></b></span></div>
     </div>
     <div class="card" id="card-wd" hidden>
-      <div class="ctitle">星期几日均营业额</div>
-      <div class="sub" id="wd-note"></div>
+      <div class="cardhead">星期几日均</div>
+      <div class="status left" id="wd-note"></div>
       <div id="chart-wd"></div>
     </div>
-    <div class="section" id="list-title">每天明细</div>
-    <div class="card list" id="day-list"></div>
-    <div class="links center"><a id="btn-export"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg> 导出 Excel</a></div>
+    <div class="card" id="list-wrap">
+      <div class="cardhead" id="list-title"><span id="list-name">每天明细</span> <a id="btn-export"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg> 导出 Excel</a></div>
+      <div id="day-list"></div>
+    </div>
   </main>
 
   <!-- 店铺 -->
   <main id="v-shop" class="view" hidden>
-    <h1 class="title">店铺</h1>
-    <p class="subtitle">成员、邀请和设置</p>
-
-    <div class="hero">
-      <div class="hero-top">
-        <div class="hero-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5 11v9h14v-9"/><path d="M10 20v-5h4v5"/></svg></div>
-        <div class="grow">
-          <div class="hero-name"><span id="sh-name"></span></div>
-          <div class="hero-label"><span id="sh-role"></span> <a id="lnk-rename" hidden>改名</a></div>
-        </div>
+    <section class="profile">
+      <div class="bigavatar" id="sh-avatar"></div>
+      <div class="pname" id="sh-name"></div>
+      <div class="prole"><span id="sh-role"></span> <a id="lnk-rename" hidden>改名</a></div>
+      <div class="stats">
+        <div><b id="sh-mcount"></b><span>成员</span></div>
+        <div><b id="sh-count"></b><span>记录</span></div>
+        <div><b id="sh-sync"></b><span>状态</span></div>
       </div>
-      <div class="pills">
-        <div class="pill"><span>成员</span><b id="sh-mcount"></b></div>
-        <div class="pill"><span>记录</span><b id="sh-count"></b></div>
-        <div class="pill"><span>状态</span><b id="sh-sync"></b></div>
-      </div>
-    </div>
+    </section>
 
     <div class="full-only">
-      <div class="section">邀请成员</div>
-      <div class="card invite">
-        <div class="irow static"><span class="tile t-red"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M3 19.5c.6-3.4 3-5.2 6-5.2 1.6 0 3 .5 4 1.4"/><path d="M18 13v6M15 16h6"/></svg></span><div class="grow"><div class="label">邀请码</div><div class="code" id="sh-code"></div></div></div>
+      <div class="card">
+        <div class="cardhead">邀请成员</div>
+        <div class="lrow static"><span class="ricon r-red"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M3 19.5c.6-3.4 3-5.2 6-5.2 1.6 0 3 .5 4 1.4"/><path d="M18 13v6M15 16h6"/></svg></span><span class="lt grow"><span class="code" id="sh-code"></span><small>新加入的人默认是「店员」</small></span></div>
         <div class="btnrow">
           <button class="btn mini" id="btn-invite">复制邀请消息</button>
           <button class="btn mini ghost" id="btn-recode" hidden>换一个</button>
         </div>
-        <div class="sub">新加入的人默认是「店员」，可以在下面改成「管理员」</div>
       </div>
-
-      <div class="section" id="sh-members-t"></div>
-      <div class="card" id="sh-members"></div>
+      <div class="card">
+        <div class="cardhead" id="sh-members-t"></div>
+        <div id="sh-members"></div>
+      </div>
     </div>
 
-    <div class="section">设置</div>
-    <div class="card menu">
-      <div class="lrow"><span class="tile t-amber"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg></span><span class="grow">外观</span>
+    <div class="card">
+      <div class="lrow static"><span class="ricon r-amber"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg></span><span class="lt grow">外观</span>
         <div class="theme" id="theme-toggle">
           <button data-th="light" aria-label="浅色"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg></button>
           <button data-th="dark" aria-label="深色"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
         </div>
       </div>
-      <a class="lrow full-only" id="logs-toggle2"><span class="tile t-purple"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span><span class="grow">最近修改记录</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
+      <a class="lrow full-only" id="logs-toggle2"><span class="ricon r-purple"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span><span class="lt grow">最近修改记录</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
       <div id="recent-logs" hidden></div>
-      <a class="lrow full-only" id="btn-export2"><span class="tile t-green"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg></span><span class="grow">导出全部数据（Excel）</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
-      <a class="lrow" id="btn-switch"><span class="tile t-blue"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3"/><path d="M17 17H5l3 3"/></svg></span><span class="grow">切换 / 新建 / 加入店铺</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
-      <a class="lrow danger" id="btn-leave" hidden><span class="tile t-red"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="grow">退出这家店铺</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
-      <a class="lrow" id="btn-logout"><span class="tile t-gray"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg></span><span class="grow">退出登录<small id="sh-email"></small></span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
+      <a class="lrow full-only" id="btn-export2"><span class="ricon r-green"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg></span><span class="lt grow">导出全部数据（Excel）</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
+      <a class="lrow" id="btn-switch"><span class="ricon r-blue"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3"/><path d="M17 17H5l3 3"/></svg></span><span class="lt grow">切换 / 新建 / 加入店铺</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
+      <a class="lrow danger" id="btn-leave" hidden><span class="ricon r-red"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="lt grow">退出这家店铺</span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
+      <a class="lrow" id="btn-logout"><span class="ricon r-gray"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></svg></span><span class="lt grow">退出登录<small id="sh-email"></small></span><span class="chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></a>
     </div>
     <p class="hint" id="install-tip"></p>
   </main>
 
   <nav class="tabbar">
-    <button data-v="entry" class="on"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg><span>记账</span></button>
-    <button data-v="charts" class="full-only"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16v-8"/></svg><span>图表</span></button>
-    <button data-v="shop"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5 11v9h14v-9"/><path d="M10 20v-5h4v5"/></svg><span>店铺</span></button>
+    <button data-v="entry" class="on"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg><span>记账</span></button>
+    <button data-v="charts" class="full-only"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16v-8"/></svg><span>图表</span></button>
+    <button data-v="shop"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5 11v9h14v-9"/><path d="M10 20v-5h4v5"/></svg><span>店铺</span></button>
   </nav>
 </section>
 

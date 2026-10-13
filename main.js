@@ -8,6 +8,8 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const num = v => parseFloat(String(v || '').replace(/\s/g, '').replace(',', '.')) || 0;
 const pad = n => (n < 10 ? '0' : '') + n;
 const int = n => Math.round(Number(n) || 0).toLocaleString('en-US');
+const f2 = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const initial = s => (String(s || '').trim()[0] || '?').toUpperCase();
 function hm(t) { const d = new Date(t); return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 
 // ---------- 状态 ----------
@@ -275,8 +277,9 @@ function renderHeader() {
   $('hdr-shop-name').textContent = shops[cur].name;
   $('hdr-caret').hidden = false;
   const s = syncState();
-  $('hdr-sync').textContent = s.c === 'ok' ? '✓ ' + s.t : s.t;
-  $('hdr-sync').className = 'syncpill ' + s.c;
+  $('hdr-sync').className = 'syncdot ' + s.c;
+  $('hdr-sync').title = s.t;
+  $('me-initial').textContent = initial(myName());
   $('sh-sync').textContent = s.t;
 }
 window.addEventListener('online', renderHeader);
@@ -350,24 +353,34 @@ function renderEntryInfo() {
   if (isFull(cur)) {
     const mv = S.monthVsLastYear(d.slice(0, 7));
     $('mo-cur-t').textContent = mv.m + '月' + (mv.isNow ? '至今' : '合计');
-    $('mo-cur').textContent = int(mv.cur);
+    renderRecent();
+    $('mo-cur').textContent = f2(mv.cur);
     $('mo-pct').textContent = mv.pct;
     $('mo-pct').className = 'pct ' + (mv.cur < mv.prevSame ? 'down' : 'up');
-    $('mo-sub').textContent = '去年' + mv.m + '月' + (mv.isNow ? '同期 ' + S.money(mv.prevSame) + ' · 全月 ' : '全月 ') + S.money(mv.prevFull);
+    $('mo-sub').textContent = '去年' + (mv.isNow ? '同期 ' + int(mv.prevSame) + ' · 全月 ' : '全月 ') + int(mv.prevFull);
   }
   calc();
 }
 function calc() {
   const tot = num($('in-cash').value) + num($('in-card').value);
-  $('t-total').textContent = S.money(tot);
+  $('t-total').textContent = f2(tot);
   if (!cur || !isFull(cur)) return;
   useShopData();
   const ly = S.lastYearToday(entry.date);
   const lyh = S.holiday(ly.lyDate), lwh = S.holiday(ly.lwDate);
-  $('ly-date').textContent = '去年今天' + (lyh ? '·' + lyh.split(' ')[0] : '');
-  $('lw-date').textContent = '去年同' + ly.lwWeekday + (lwh ? '·' + lwh.split(' ')[0] : '');
+  $('ly-date').textContent = '去年今天';
+  $('ly-sub').textContent = ly.lyDate + ' ' + ly.lyWeekday + (lyh ? ' · ' + lyh.split(' ')[0] : '');
+  $('lw-date').textContent = '去年同一个' + ly.lwWeekday;
+  $('lw-sub').textContent = ly.lwDate + (lwh ? ' · ' + lwh.split(' ')[0] : '');
+  const vc = $('vs-chip');
+  vc.hidden = !(ly.lyTotal && tot);
+  if (!vc.hidden) {
+    const p = S.pct(tot, ly.lyTotal);
+    vc.textContent = '比去年今天 ' + p;
+    vc.className = 'chip ' + (tot < ly.lyTotal ? 'down' : 'up');
+  }
   const put = (id, val) => {
-    $(id + '-val').textContent = val === null ? '—' : int(val);
+    $(id + '-val').textContent = val === null ? '—' : f2(val);
     const p = $(id + '-pct');
     p.textContent = val && tot ? S.pct(tot, val) : '';
     p.className = 'pct ' + (tot < val ? 'down' : 'up');
@@ -385,6 +398,25 @@ $('in-date').onchange = e => {
 $('d-prev').onclick = () => setDate(S.addDays(entry.date, -1));
 $('d-next').onclick = () => { if (entry.date < S.today()) setDate(S.addDays(entry.date, 1)); };
 const me = () => ({ uid: user.uid, name: myName() });
+function dayHtml(r) {
+  const hd = S.holiday(r.date);
+  const md = +r.date.slice(5, 7) + '月' + (+r.date.slice(8)) + '日';
+  return `<div class="day" data-date="${r.date}">
+    <div class="dnum${hd ? ' hd' : ''}"><b>${+r.date.slice(8)}</b><span>${S.weekday(r.date)}</span></div>
+    <div class="grow"><b>${md}${hd ? '<span class="hol">' + esc(hd.split(' ')[0]) + '</span>' : ''}</b>
+      <small>现金 ${f2(r.cash)} · 刷卡 ${f2(r.card)}${r.note ? ' · ' + esc(r.note) : ''}</small></div>
+    <div class="amt2">${f2(S.total(r))}</div></div>`;
+}
+function renderRecent() {
+  const m = curRecs();
+  const days = Object.keys(m).sort().reverse().slice(0, 5).map(d => Object.assign({ date: d }, m[d]));
+  $('recent-card').hidden = !days.length;
+  $('recent-days').innerHTML = days.map(dayHtml).join('');
+}
+$('recent-days').onclick = e => { const it = e.target.closest('.day'); if (it) { setDate(it.dataset.date); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
+$('see-all').onclick = () => go('charts');
+$('go-shop').onclick = () => go('shop');
+window.addEventListener('scroll', () => document.querySelector('.topnav').classList.toggle('scrolled', window.scrollY > 8), { passive: true });
 $('btn-save').onclick = () => {
   const cash = num($('in-cash').value), card = num($('in-card').value);
   if (cash === 0 && card === 0) { toast('请输入金额'); return; }
@@ -430,8 +462,8 @@ $('in-month').onchange = e => { if (e.target.value) { charts.month = e.target.va
 $('in-year').onchange = e => { charts.year = +e.target.value; renderCharts(); };
 
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
-  $('sum-cur-t').textContent = curT; $('sum-cur').textContent = curV;
-  $('sum-prev-t').textContent = prevT; $('sum-prev').textContent = prevV;
+  $('sum-cur-t').textContent = curT; $('sum-cur').textContent = f2(parseFloat(curV));
+  $('sum-prev-t').textContent = prevT; $('sum-prev').textContent = f2(parseFloat(prevV));
   $('sum-pct').textContent = pctV || '—'; $('sum-pct').className = 'pct big ' + (pctV ? (down ? 'down' : 'up') : '');
   $('sum-note').textContent = note || '';
 }
@@ -497,20 +529,14 @@ function renderCharts() {
 
   const showList = tab === 'day';
   $('day-list').hidden = !showList;
-  $('list-title').hidden = !showList;
+  $('list-name').textContent = showList ? '每天明细' : '导出数据';
   if (showList) {
     const list = S.listMonth(month);
-    $('day-list').innerHTML = list.length ? list.map(r => {
-      const hd = S.holiday(r.date);
-      return `<div class="item" data-date="${r.date}">
-        <div class="top"><span>${+r.date.slice(8)}日 <span class="muted small">${S.weekday(r.date)}</span>${hd ? '<span class="hol">' + esc(hd.split(' ')[0]) + '</span>' : ''}</span><span class="t">${S.money(S.total(r))}</span></div>
-        <div class="muted small">现金 ${S.money(r.cash)} · 刷卡 ${S.money(r.card)}${r.note ? ' · ' + esc(r.note) : ''}${r.by && charts.scope !== 'all' ? ' · ' + esc(r.by) : ''}</div>
-      </div>`;
-    }).join('') : '<div class="center muted">这个月还没有记录</div>';
+    $('day-list').innerHTML = list.length ? list.map(dayHtml).join('') : '<div class="empty">这个月还没有记录</div>';
   }
 }
 $('day-list').onclick = e => {
-  const it = e.target.closest('.item'); if (!it || charts.scope === 'all') return;
+  const it = e.target.closest('.day'); if (!it || charts.scope === 'all') return;
   setDate(it.dataset.date); go('entry');
 };
 
@@ -559,6 +585,7 @@ function renderShop() {
   const s = shops[cur]; if (!s) return;
   const role = roleOf(cur), isOwner = role === 'owner';
   $('sh-name').textContent = s.name;
+  $('sh-avatar').textContent = initial(s.name);
   $('lnk-rename').hidden = !isOwner;
   $('sh-role').textContent = '我是' + ROLE_TEXT[role] + (mine.shopIds.length > 1 ? ' · 共 ' + mine.shopIds.length + ' 家店' : '');
   $('sh-code').textContent = s.code;
@@ -566,7 +593,7 @@ function renderShop() {
   $('btn-leave').hidden = isOwner;
   $('sh-email').textContent = user.email || '';
   const ms = Object.entries(s.members || {}).sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
-  $('sh-members-t').textContent = '成员 · ' + ms.length + ' 人';
+  $('sh-members-t').textContent = '成员';
   $('sh-mcount').textContent = ms.length + ' 人';
   $('sh-members').innerHTML = ms.map(([uid, m]) => {
     const r = uid === s.owner ? 'owner' : (m.role || 'manager');
@@ -575,7 +602,7 @@ function renderShop() {
     const acts = isOwner && uid !== user.uid
       ? `<button class="role" data-uid="${esc(uid)}" data-name="${esc(m.name)}" data-role="${r}">${ROLE_TEXT[r]} ⇄</button><span class="kick" data-uid="${esc(uid)}" data-name="${esc(m.name)}">移除</span>`
       : (uid !== s.owner ? `<span class="muted small">${ROLE_TEXT[r]}</span>` : '');
-    return `<div class="mrow"><span>${esc(m.name)}${tag}${meTag}</span><span class="acts">${acts}</span></div>`;
+    return `<div class="mrow"><span class="who"><span class="mav">${esc(initial(m.name))}</span><span>${esc(m.name)}${tag}${meTag}</span></span><span class="acts">${acts}</span></div>`;
   }).join('');
   $('sh-count').textContent = Object.keys(curRecs()).length + ' 天';
   if (isFull(cur) && !recentUnsub) {
