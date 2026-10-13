@@ -694,7 +694,7 @@ function renderMvs(month) {
     $('mvs-best-sub').textContent = mdText(ms.best.date) + ' ' + S.weekday(ms.best.date) + (S.holiday(ms.best.date) ? ' · ' + S.holiday(ms.best.date).split(' ')[0] : '');
     $('mvs-best-row').dataset.date = ms.best.date;
   }
-  $('mvs-title').textContent = mv.m + '月 vs 去年' + mv.m + '月';
+  $('mvs-title').textContent = mv.y + '年' + mv.m + '月概况';
   $('mvs-cur-t').textContent = mv.y + '年' + mv.m + '月' + (mv.isNow ? '至今' : '');
   $('mvs-cur').textContent = f2(mv.cur) + ' lei';
   $('mvs-same-t').textContent = (mv.y - 1) + '年' + mv.m + '月' + (mv.isNow ? '同期' : '');
