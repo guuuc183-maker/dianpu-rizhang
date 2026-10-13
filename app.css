@@ -406,3 +406,6 @@ body:not(.owner) .owner-only { display: none !important; }
 @keyframes spLit { to { background: #2EE6A0; box-shadow: 0 0 18px rgba(46, 230, 160, .65); } }
 @keyframes spName { to { opacity: .9; transform: none; } }
 @media (prefers-reduced-motion: reduce) { #splash { display: none; } }
+
+.soon { margin-top: 10px; font-size: 12px; color: var(--brand); letter-spacing: .2px; animation: fade .4s both; }
+.mvs-best { cursor: pointer; }

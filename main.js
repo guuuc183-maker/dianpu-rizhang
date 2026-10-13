@@ -437,6 +437,10 @@ function renderEntryInfo() {
   $('btn-rest').classList.toggle('on', closed);
   document.querySelector('.hero').classList.toggle('closed', closed);
   renderMissed();
+  // 节假日提前提醒（只在看今天时显示，14 天内）
+  const nh = d === t ? S.nextHoliday(S.addDays(t, 1), 14) : null;
+  $('soon').hidden = !nh;
+  if (nh) $('soon').textContent = mdText(nh.date) + ' ' + nh.name.split(' ')[0] + ' · ' + (nh.days === 0 ? '明天' : '还有 ' + (nh.days + 1) + ' 天') + '，记得提前备货';
   $('ring-label').textContent = closed ? '休息日' : '营业额';
   if (isFull(cur)) {
     const mv = S.monthVsLastYear(d.slice(0, 7));
@@ -680,6 +684,16 @@ function setSum(curT, curV, prevT, prevV, pctV, down, note) {
 function renderMvs(month) {
   const mv = S.monthVsLastYear(month);
   $('card-mvs').hidden = false;
+  const ms = S.monthStats(month);
+  $('mvs-avg-row').hidden = !ms.days;
+  $('mvs-best-row').hidden = !ms.best;
+  $('mvs-avg').textContent = f2(ms.avg) + ' lei';
+  $('mvs-avg-sub').textContent = ms.days + ' 天营业';
+  if (ms.best) {
+    $('mvs-best').textContent = f2(ms.best.total) + ' lei';
+    $('mvs-best-sub').textContent = mdText(ms.best.date) + ' ' + S.weekday(ms.best.date) + (S.holiday(ms.best.date) ? ' · ' + S.holiday(ms.best.date).split(' ')[0] : '');
+    $('mvs-best-row').dataset.date = ms.best.date;
+  }
   $('mvs-title').textContent = mv.m + '月 vs 去年' + mv.m + '月';
   $('mvs-cur-t').textContent = mv.y + '年' + mv.m + '月' + (mv.isNow ? '至今' : '');
   $('mvs-cur').textContent = f2(mv.cur) + ' lei';
@@ -786,6 +800,7 @@ function renderCharts() {
     $('day-list').innerHTML = list.length ? list.map(dayHtml).join('') : '<div class="empty">这个月还没有记录</div>';
   }
 }
+$('mvs-best-row').onclick = () => { const d = $('mvs-best-row').dataset.date; if (d && charts.scope !== 'all') { setDate(d); go('entry'); } };
 $('day-list').onclick = e => {
   const it = e.target.closest('.day'); if (!it || charts.scope === 'all') return;
   setDate(it.dataset.date); go('entry');

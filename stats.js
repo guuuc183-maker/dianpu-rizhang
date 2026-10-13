@@ -134,6 +134,22 @@ export function missingDays(from, to) {
   for (let d = from; d <= to; d = addDays(d, 1)) if (!ALL[d]) out.push(d);
   return out;
 }
+// 某个月：有营业的天数、日均、最高的一天（休息日不算）
+export function monthStats(month) {
+  let sum = 0, days = 0, best = null;
+  for (const k in ALL) {
+    if (!k.startsWith(month) || ALL[k].closed) continue;
+    const t = total(ALL[k]); if (!(t > 0)) continue;
+    sum += t; days++;
+    if (!best || t > best.total) best = { date: k, total: round(t) };
+  }
+  return { days, avg: days ? round(sum / days) : 0, best };
+}
+// 从 from 开始 n 天内的下一个节日
+export function nextHoliday(from, n) {
+  for (let i = 0; i <= n; i++) { const d = addDays(from, i), h = holiday(d); if (h) return { date: d, name: h, days: i }; }
+  return null;
+}
 export function firstDate() { const ks = Object.keys(ALL).sort(); return ks[0] || null; }
 export function firstYear() {
   const ks = Object.keys(ALL).sort();
