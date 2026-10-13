@@ -28,7 +28,7 @@ const roleOf = id => {
   return (s.members && s.members[user.uid] && s.members[user.uid].role) || 'manager';
 };
 const isFull = id => roleOf(id) !== 'staff';
-const ROLE_TEXT = { owner: '店主', manager: '家人', staff: '店员' };
+const ROLE_TEXT = { owner: '店主', manager: '管理员', staff: '店员' };
 const myName = () => { const s = shops[cur]; return (s && s.members && s.members[user.uid] && s.members[user.uid].name) || ''; };
 const fullShops = () => mine.shopIds.filter(id => shops[id] && isFull(id));
 
@@ -136,7 +136,7 @@ function enterShop(id) {
   }
 }
 
-// 家人/店主：监听整家店；店员：只监听今天和昨天
+// 管理员/店主：监听整家店；店员：只监听今天和昨天
 function attachRecords(id) {
   const mode = isFull(id) ? 'full' : 'staff';
   if (recUnsub[id] && recUnsub[id].mode === mode) return;
@@ -595,7 +595,7 @@ $('sh-members').onclick = e => {
   const r = e.target.closest('.role');
   if (r) {
     const to = r.dataset.role === 'staff' ? 'manager' : 'staff';
-    const tip = to === 'manager' ? '改成「家人」：能看全部数据、图表和修改记录。' : '改成「店员」：只能记今天和昨天，看不到历史和图表。';
+    const tip = to === 'manager' ? '改成「管理员」：能看全部数据、图表和修改记录。' : '改成「店员」：只能记今天和昨天，看不到历史和图表。';
     if (!confirm('把「' + r.dataset.name + '」' + tip)) return;
     db.setRole(cur, r.dataset.uid, to).then(() => toast('已修改')).catch(err => toast(errText(err), 3000));
   }
