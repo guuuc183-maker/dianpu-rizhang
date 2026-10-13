@@ -5,7 +5,14 @@ import * as db from './db.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const num = v => parseFloat(String(v || '').replace(/\s/g, '').replace(',', '.')) || 0;
+// 金额：支持 1200+350-20 这样的加减
+const num = v => {
+  const s = String(v || '').replace(/\s/g, '').replace(/,/g, '.');
+  const parts = s.match(/[+-]?[0-9]*\.?[0-9]+/g);
+  if (!parts) return 0;
+  return Math.round(parts.reduce((a, p) => a + (parseFloat(p) || 0), 0) * 100) / 100;
+};
+const hasOp = v => /[0-9.,]\s*[+-]/.test(String(v || ''));
 const pad = n => (n < 10 ? '0' : '') + n;
 const int = n => Math.round(Number(n) || 0).toLocaleString('en-US');
 const f2 = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -389,7 +396,7 @@ function logHtml(l, withDate) {
   const what = l.action === 'delete'
     ? '<span class="del">删除了</span>'
     : l.action === 'rest' ? '<span class="warn">标记休息</span>'
-    : '现金 ' + S.money(l.cash) + ' · 刷卡 ' + S.money(l.card) + (l.note ? ' · ' + esc(l.note) : '');
+    : '现金 ' + f2(l.cash) + ' · 刷卡 ' + f2(l.card) + (l.note ? ' · ' + esc(l.note) : '');
   return `<div class="log"><span>${withDate ? '<b>' + esc(l.date.slice(5)) + '</b> ' : ''}${what}</span><span class="who">${esc(l.by)} · ${hm(l.at)}</span></div>`;
 }
 function fillForm() {
@@ -417,6 +424,7 @@ function renderEntryInfo() {
   $('btn-rest').textContent = closed ? '取消休息' : '休息';
   $('btn-rest').classList.toggle('on', closed);
   document.querySelector('.hero').classList.toggle('closed', closed);
+  renderMissed();
   $('ring-label').textContent = closed ? '休息日' : '营业额';
   if (isFull(cur)) {
     const mv = S.monthVsLastYear(d.slice(0, 7));
@@ -437,6 +445,26 @@ function renderEntryInfo() {
   }
   calc();
 }
+// 漏记的日子：管理员看本月（从第一条记录起）到昨天；店员只看昨天
+function missedDays() {
+  if (!cur) return [];
+  const t = S.today(), y = S.addDays(t, -1);
+  if (!isFull(cur)) return curRecs()[y] ? [] : [y];
+  useShopData();
+  const first = S.firstDate(); if (!first) return [];
+  let from = t.slice(0, 8) + '01'; if (first > from) from = first;
+  return from <= y ? S.missingDays(from, y) : [];
+}
+const mdText = d => +d.slice(5, 7) + '月' + (+d.slice(8)) + '日';
+function renderMissed() {
+  const miss = missedDays(), c = $('miss-chip');
+  c.hidden = !miss.length;
+  if (miss.length) {
+    c.textContent = (miss.length === 1 ? mdText(miss[0]) + '还没记' : '本月有 ' + miss.length + ' 天没记') + ' ›';
+    c.dataset.date = miss[0];
+  }
+}
+$('miss-chip').onclick = () => { if ($('miss-chip').dataset.date) setDate($('miss-chip').dataset.date); };
 function calc(animate = true) {
   const cash = num($('in-cash').value), card = num($('in-card').value), tot = cash + card;
   setNum($('t-total'), tot, animate);
@@ -466,6 +494,22 @@ function calc(animate = true) {
   put('ly', ly.lyTotal); put('lw', ly.lwTotal);
 }
 ['in-cash', 'in-card', 'in-note'].forEach(id => $(id).addEventListener('input', () => { entry.editing = true; calc(false); }));
+// 「＋」按钮：不收起键盘，在金额后面加一个加号；离开输入框时把算式换成结果
+['cash', 'card'].forEach(k => {
+  const inp = $('in-' + k), btn = $('plus-' + k);
+  btn.addEventListener('pointerdown', e => e.preventDefault());
+  btn.addEventListener('click', e => {
+    e.preventDefault();
+    const v = inp.value.trim();
+    if (v && !/[+-]$/.test(v)) inp.value = v + '+';
+    inp.focus();
+    const n = inp.value.length; try { inp.setSelectionRange(n, n); } catch (err) {}
+    entry.editing = true; calc(false);
+  });
+  inp.addEventListener('blur', () => {
+    if (hasOp(inp.value)) { const n = num(inp.value); inp.value = n ? String(n) : ''; calc(false); }
+  });
+});
 $('in-date').onchange = e => {
   let v = e.target.value; if (!v) return;
   const t = S.today();
@@ -479,6 +523,10 @@ const me = () => ({ uid: user.uid, name: myName() });
 function dayHtml(r) {
   const hd = S.holiday(r.date);
   const md = +r.date.slice(5, 7) + '月' + (+r.date.slice(8)) + '日';
+  if (r.missing) return `<div class="day miss" data-date="${r.date}">
+    <div class="dnum"><b>${+r.date.slice(8)}</b><span>${S.weekday(r.date)}</span></div>
+    <div class="grow"><b>${md}</b><small>没有记录，点一下去补记</small></div>
+    <div class="amt2 miss">未记录</div></div>`;
   return `<div class="day" data-date="${r.date}">
     <div class="dnum${hd ? ' hd' : ''}"><b>${+r.date.slice(8)}</b><span>${S.weekday(r.date)}</span></div>
     <div class="grow"><b>${md}${hd ? '<span class="hol">' + esc(hd.split(' ')[0]) + '</span>' : ''}</b>
@@ -594,12 +642,12 @@ function renderMvs(month) {
   $('card-mvs').hidden = false;
   $('mvs-title').textContent = mv.m + '月 vs 去年' + mv.m + '月';
   $('mvs-cur-t').textContent = mv.y + '年' + mv.m + '月' + (mv.isNow ? '至今' : '');
-  $('mvs-cur').textContent = S.money(mv.cur) + ' lei';
+  $('mvs-cur').textContent = f2(mv.cur) + ' lei';
   $('mvs-same-t').textContent = (mv.y - 1) + '年' + mv.m + '月' + (mv.isNow ? '同期' : '');
-  $('mvs-same').textContent = S.money(mv.prevSame) + ' lei';
+  $('mvs-same').textContent = f2(mv.prevSame) + ' lei';
   $('mvs-pct').textContent = mv.pct; $('mvs-pct').className = 'pct ' + (mv.cur < mv.prevSame ? 'down' : 'up');
   $('mvs-full-t').textContent = (mv.y - 1) + '年' + mv.m + '月全月';
-  $('mvs-full').textContent = S.money(mv.prevFull) + ' lei';
+  $('mvs-full').textContent = f2(mv.prevFull) + ' lei';
 }
 
 function renderCharts() {
@@ -631,7 +679,7 @@ function renderCharts() {
     data = S.byDay(month);
     const mv = S.monthVsLastYear(month);
     setSum(mv.isNow ? '至今' : '全月', S.money(mv.cur), '去年' + mv.m + '月' + (mv.isNow ? '同期' : ''), S.money(mv.prevSame),
-      mv.pct, mv.cur < mv.prevSame, '去年' + mv.m + '月全月：' + S.money(mv.prevFull) + ' lei' + (mv.isNow && mv.remain > 0 ? '，还差 ' + S.money(mv.remain) + ' 追平' : ''));
+      mv.pct, mv.cur < mv.prevSame, '去年' + mv.m + '月全月：' + f2(mv.prevFull) + ' lei' + (mv.isNow && mv.remain > 0 ? '，还差 ' + f2(mv.remain) + ' 追平' : ''));
     $('chart-title').textContent = '每天营业额' + scopeName;
   } else if (tab === 'month') {
     const mon = charts.mon, my = +mon.slice(0, 4), mi = +mon.slice(5, 7) - 1;
@@ -648,7 +696,7 @@ function renderCharts() {
     const wd = S.byWeekday(my);
     const bi = wd.values.indexOf(Math.max(...wd.values));
     $('wd-note').textContent = wd.best
-      ? my + '年生意最好的是' + wd.best + '，日均 ' + S.money(wd.values[bi]) + ' lei' + (wd.compare[bi] ? '（去年' + wd.labels[bi] + ' ' + S.money(wd.compare[bi]) + '）' : '') + '。可以用来排班和安排进货。'
+      ? my + '年生意最好的是' + wd.best + '，日均 ' + f2(wd.values[bi]) + ' lei' + (wd.compare[bi] ? '（去年' + wd.labels[bi] + ' ' + f2(wd.compare[bi]) + '）' : '') + '。可以用来排班和安排进货。'
       : '还没有足够的记录';
     wdChart.set(wd, { legendA: my + '年', legendB: (my - 1) + '年' });
     mainChart.set(data, opt);
@@ -664,7 +712,7 @@ function renderCharts() {
       const wd = S.byWeekday(year);
       const bi = wd.values.indexOf(Math.max(...wd.values));
       $('wd-note').textContent = wd.best
-        ? year + '年生意最好的是' + wd.best + '，日均 ' + S.money(wd.values[bi]) + ' lei' + (wd.compare[bi] ? '（去年' + wd.labels[bi] + ' ' + S.money(wd.compare[bi]) + '）' : '') + '。可以用来排班和安排进货。'
+        ? year + '年生意最好的是' + wd.best + '，日均 ' + f2(wd.values[bi]) + ' lei' + (wd.compare[bi] ? '（去年' + wd.labels[bi] + ' ' + f2(wd.compare[bi]) + '）' : '') + '。可以用来排班和安排进货。'
         : '还没有足够的记录';
       wdChart.set(wd, { legendA: year + '年', legendB: (year - 1) + '年' });
     }
@@ -686,7 +734,13 @@ function renderCharts() {
   $('day-list').hidden = !showList;
   $('list-name').textContent = showList ? '每天明细' : '导出数据';
   if (showList) {
-    const list = S.listMonth(month);
+    let list = S.listMonth(month);
+    if (charts.scope === 'shop') {
+      const first = S.firstDate(), y = S.addDays(S.today(), -1);
+      const ms = month + '-01', me_ = month + '-' + pad(new Date(+month.slice(0, 4), +month.slice(5, 7), 0).getDate());
+      const from = first && first > ms ? first : ms, to = me_ < y ? me_ : y;
+      if (first && from <= to) list = list.concat(S.missingDays(from, to).map(d => ({ date: d, missing: true }))).sort((a, b) => b.date.localeCompare(a.date));
+    }
     $('day-list').innerHTML = list.length ? list.map(dayHtml).join('') : '<div class="empty">这个月还没有记录</div>';
   }
 }

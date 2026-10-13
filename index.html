@@ -103,13 +103,14 @@
       <div class="chips">
         <span class="chip red" id="d-holiday" hidden></span>
         <span class="chip" id="vs-chip" hidden></span>
+        <span class="chip warn" id="miss-chip" hidden></span>
       </div>
       <div class="status" id="d-status"></div>
     </section>
 
     <div class="card inputs">
-      <label class="lrow irow"><i class="vbar cash"></i><span class="lt">现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
-      <label class="lrow irow"><i class="vbar cardc"></i><span class="lt">刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"></label>
+      <label class="lrow irow"><i class="vbar cash"></i><span class="lt">现金</span><input class="amt" id="in-cash" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"><button type="button" class="plus" id="plus-cash" aria-label="加">＋</button></label>
+      <label class="lrow irow"><i class="vbar cardc"></i><span class="lt">刷卡</span><input class="amt" id="in-card" inputmode="decimal" placeholder="0" autocomplete="off" enterkeyhint="next"><button type="button" class="plus" id="plus-card" aria-label="加">＋</button></label>
       <label class="lrow irow"><i class="vbar note"></i><span class="lt">备注</span><input class="note" id="in-note" placeholder="选填" maxlength="100" enterkeyhint="done"></label>
     </div>
     <button class="btn wide" id="btn-save">保存</button>

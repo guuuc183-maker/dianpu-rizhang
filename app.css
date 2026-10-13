@@ -225,6 +225,14 @@ a.lrow:active { opacity: .55; }
 .vbar { width: 3px; height: 26px; border-radius: 2px; flex-shrink: 0; transition: height .3s var(--ease); }
 .vbar.cash { background: var(--cash); } .vbar.cardc { background: var(--cardc); } .vbar.note { background: var(--muted); }
 .irow:focus-within .vbar { height: 38px; }
+.plus { flex-shrink: 0; width: 34px; height: 34px; margin-left: 4px; border-radius: 10px; border: 1px solid var(--line2); background: var(--card-2);
+  color: var(--text2); font-size: 18px; line-height: 1; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .2s, transform .15s var(--ease); }
+.irow:focus-within .plus { opacity: 1; pointer-events: auto; }
+.plus:active { transform: scale(.88); }
+.chip.warn { color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, transparent); cursor: pointer; }
+.day.miss { opacity: .6; }
+.day.miss .dnum b { color: var(--muted); }
+.day .amt2.miss { color: var(--amber); font-family: inherit; font-size: 13px; font-weight: 600; }
 .amt { font-family: var(--num); font-size: 32px; font-weight: 600; font-variant-numeric: tabular-nums; caret-color: var(--accent); }
 .note { font-size: 15px; caret-color: var(--accent); }
 .rv { display: flex; align-items: center; gap: 8px; white-space: nowrap; }

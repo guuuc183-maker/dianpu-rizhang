@@ -128,6 +128,13 @@ export function byYear() {
   return { labels, values, titles };
 }
 
+// 某段日期里（含首尾）完全没有记录的日子；休息日算已记录
+export function missingDays(from, to) {
+  const out = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) if (!ALL[d]) out.push(d);
+  return out;
+}
+export function firstDate() { const ks = Object.keys(ALL).sort(); return ks[0] || null; }
 export function firstYear() {
   const ks = Object.keys(ALL).sort();
   return ks.length ? +ks[0].slice(0, 4) : +today().slice(0, 4);
