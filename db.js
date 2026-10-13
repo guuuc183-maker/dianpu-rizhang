@@ -149,6 +149,18 @@ export async function leave(shopId, uid) {
   await forgetShop(uid, shopId);
 }
 
+// ---------- 头像（存成小图片，放在每家店的 avatars 里） ----------
+export function watchAvatars(shopId, cb) {
+  return onSnapshot(collection(db, 'shops', shopId, 'avatars'), s => {
+    const m = {}; s.forEach(d => { if (d.data().img) m[d.id] = d.data().img; }); cb(m);
+  }, () => cb({}));
+}
+export function setAvatar(shopIds, uid, img) {
+  const b = writeBatch(db);
+  shopIds.forEach(id => b.set(doc(db, 'shops', id, 'avatars', uid), { img, at: serverTimestamp() }));
+  return b.commit();
+}
+
 // ---------- 营业额记录 ----------
 function toRec(x) {
   return {

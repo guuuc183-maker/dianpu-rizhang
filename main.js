@@ -69,7 +69,8 @@ const recs = {};         // 店铺 id → { 日期: 记录 }
 const recUnsub = {};     // 店铺 id → { mode, fn }
 const metas = {};        // 店铺 id → 同步状态
 let cur = null, inApp = false;
-let dayLogUnsub = null, recentUnsub = null;
+let dayLogUnsub = null, recentUnsub = null, avatarUnsub = null;
+let avatars = {};
 
 const roleOf = id => {
   const s = shops[id];
@@ -127,8 +128,8 @@ function start() {
 function resetAll() {
   Object.keys(shopUnsub).forEach(id => { shopUnsub[id](); delete shopUnsub[id]; delete shops[id]; });
   Object.keys(recUnsub).forEach(detachRecords);
-  if (dayLogUnsub) dayLogUnsub(); if (recentUnsub) recentUnsub();
-  dayLogUnsub = recentUnsub = null;
+  if (dayLogUnsub) dayLogUnsub(); if (recentUnsub) recentUnsub(); if (avatarUnsub) avatarUnsub();
+  dayLogUnsub = recentUnsub = avatarUnsub = null; avatars = {};
   cur = null; inApp = false; mine = { shopIds: [], current: null };
   S.setRecords({});
 }
@@ -168,6 +169,9 @@ function removedFrom(id) {
 function enterShop(id) {
   if (dayLogUnsub) { dayLogUnsub(); dayLogUnsub = null; }
   if (recentUnsub) { recentUnsub(); recentUnsub = null; }
+  if (avatarUnsub) { avatarUnsub(); avatarUnsub = null; }
+  avatars = {};
+  avatarUnsub = db.watchAvatars(id, m => { avatars = m; renderHeader(); renderShop(); });
   if (cur && cur !== id) {
     // 换店：只保留新店的记录监听（合计模式需要时再挂）
     Object.keys(recUnsub).forEach(detachRecords);
@@ -329,6 +333,9 @@ function renderHeader() {
   $('hdr-sync').className = 'syncdot ' + s.c;
   $('hdr-sync').title = s.t;
   $('me-initial').textContent = initial(myName());
+  const mine_ = user && avatars[user.uid];
+  $('me-img').hidden = !mine_; if (mine_ && $('me-img').src !== mine_) $('me-img').src = mine_;
+  $('me-initial').hidden = !!mine_;
   $('sh-sync').textContent = s.t;
 }
 window.addEventListener('online', renderHeader);
@@ -657,9 +664,13 @@ function renderShop() {
     const acts = isOwner && uid !== user.uid
       ? `<button class="role" data-uid="${esc(uid)}" data-name="${esc(m.name)}" data-role="${r}">${ROLE_TEXT[r]} ⇄</button><span class="kick" data-uid="${esc(uid)}" data-name="${esc(m.name)}">移除</span>`
       : (uid !== s.owner ? `<span class="muted small">${ROLE_TEXT[r]}</span>` : '');
-    return `<div class="mrow"><span class="who"><span class="mav">${esc(initial(m.name))}</span><span>${esc(m.name)}${tag}${meTag}</span></span><span class="acts">${acts}</span></div>`;
+    const face = avatars[uid] ? `<img src="${esc(avatars[uid])}" alt="">` : esc(initial(m.name));
+    return `<div class="mrow"><span class="who"><span class="mav">${face}</span><span>${esc(m.name)}${tag}${meTag}</span></span><span class="acts">${acts}</span></div>`;
   }).join('');
   $('sh-count').textContent = Object.keys(curRecs()).length + ' 天';
+  const myImg = avatars[user.uid];
+  $('my-avatar').innerHTML = myImg ? `<img src="${esc(myImg)}" alt="">` : esc(initial(myName()));
+  $('avatar-sub').textContent = myImg ? '点这里更换' : '点这里上传照片';
   if (isFull(cur) && !recentUnsub) {
     recentUnsub = db.watchRecentLogs(cur, 20, logs => {
       $('recent-logs').innerHTML = logs.length ? logs.map(l => logHtml(l, true)).join('') : '<div class="muted small">还没有记录</div>';
@@ -703,6 +714,40 @@ $('btn-leave').onclick = async () => {
   const id = cur;
   try { await db.leave(id, user.uid); } catch (e) { toast(errText(e), 3000); return; }
   removedFrom(id);
+};
+// 上传头像：裁成正方形、缩到 192 像素，存成很小的 JPEG
+function loadImage(file) {
+  return new Promise((ok, bad) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); ok(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); bad(new Error('图片打不开')); };
+    img.src = url;
+  });
+}
+async function makeAvatar(file) {
+  const img = await loadImage(file);
+  const s = Math.min(img.naturalWidth, img.naturalHeight), N = 192;
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, N, N);
+  ctx.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, N, N);
+  for (const q of [0.82, 0.7, 0.55, 0.4]) {
+    const out = c.toDataURL('image/jpeg', q);
+    if (out.length < 38000) return out;
+  }
+  throw new Error('图片太大');
+}
+$('in-avatar').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const row = $('row-avatar'); row.classList.add('busy');
+  try {
+    const img = await makeAvatar(f);
+    avatars[user.uid] = img; renderShop();
+    await db.setAvatar(mine.shopIds.filter(id => shops[id]), user.uid, img);
+    toast('头像已更新');
+  } catch (err) { toast('上传失败：' + errText(err), 3000); }
+  row.classList.remove('busy');
 };
 $('logs-toggle2').onclick = () => { $('recent-logs').hidden = !$('recent-logs').hidden; };
 $('btn-logout').onclick = () => { if (confirm('确定退出登录？')) db.logout(); };
