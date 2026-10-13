@@ -111,8 +111,8 @@ input::placeholder { color: var(--muted); }
 .shopchip svg { color: var(--text2); flex-shrink: 0; transition: transform .25s var(--ease); }
 .shopchip:active svg { transform: translateY(2px); }
 .syncdot { justify-self: end; font-size: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 14px; transition: background .3s; }
-.syncdot.ok { background: var(--up); animation: ping 2.6s ease-out infinite; }
-.syncdot.warn { background: var(--amber); animation: breathe 1.2s ease-in-out infinite; }
+.syncdot.ok { background: var(--up); }
+.syncdot.warn { background: var(--amber); }
 
 .view { padding-bottom: calc(100px + var(--safe-b)); }
 
