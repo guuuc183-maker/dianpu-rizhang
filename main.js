@@ -101,8 +101,18 @@ function toast(msg, ms = 2000, act, fn) {
   }
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
 }
+// 过渡动画：至少播放 1.3 秒，等第一屏准备好再淡出
+const splashT0 = performance.now();
+let splashGone = false;
+function hideSplash() {
+  if (splashGone) return; splashGone = true;
+  const sp = $('splash'); if (!sp) return;
+  setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 700); }, Math.max(0, 1300 - (performance.now() - splashT0)));
+}
+setTimeout(hideSplash, 5000); // 网络很慢时也不要一直挡着
 function show(name) {
   ['loading', 'config', 'login', 'setup', 'app'].forEach(n => { $('s-' + n).hidden = n !== name; });
+  if (name !== 'loading') hideSplash();
   window.scrollTo(0, 0);
 }
 function errText(e) {

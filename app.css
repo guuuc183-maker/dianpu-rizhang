@@ -388,3 +388,22 @@ body:not(.owner) .owner-only { display: none !important; }
 @keyframes slideR { from { opacity: .2; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 .swipe-l { animation: slideL .32s var(--ease); }
 .swipe-r { animation: slideR .32s var(--ease); }
+
+/* ---------- 打开时的过渡动画（WHOOP 风格：圆环画一圈 → 名字浮现 → 放大淡出） ---------- */
+#splash { position: fixed; inset: 0; z-index: 100; background: #07090B; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+  transition: opacity .5s var(--ease), transform .6s var(--ease); }
+#splash .sp-logo { position: relative; width: 112px; height: 112px; }
+#splash svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+#splash .sp-arc { fill: none; stroke: #F4F6F7; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 222.7 400; stroke-dashoffset: 222.7;
+  animation: spDraw .95s cubic-bezier(.65, 0, .35, 1) .1s forwards; }
+#splash .sp-dot { fill: #2EE6A0; opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0);
+  animation: spDot .5s cubic-bezier(.3, 1.6, .5, 1) .95s forwards; filter: drop-shadow(0 0 5px rgba(46, 230, 160, .8)); }
+#splash .sp-mark { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #F4F6F7;
+  font-size: 25px; font-weight: 800; letter-spacing: 1px; opacity: 0; transform: scale(.9); animation: spName .55s var(--ease) .55s forwards; }
+#splash .sp-name { color: #F4F6F7; font-size: 14px; font-weight: 600; letter-spacing: 3px; padding-left: 3px; opacity: 0; transform: translateY(8px);
+  animation: spName .6s var(--ease) .65s forwards; }
+#splash.out { opacity: 0; transform: scale(1.12); pointer-events: none; }
+@keyframes spDraw { to { stroke-dashoffset: 0; } }
+@keyframes spDot { to { opacity: 1; transform: scale(1); } }
+@keyframes spName { to { opacity: .9; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #splash { display: none; } }
