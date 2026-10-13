@@ -77,7 +77,6 @@ input::placeholder { color: var(--muted); }
 @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @keyframes breathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 
-.screen:not([hidden]) { animation: fade .45s var(--ease) both; }
 .view:not([hidden]) > * { animation: rise .55s var(--ease) both; }
 .view:not([hidden]) > :nth-child(2) { animation-delay: .05s; }
 .view:not([hidden]) > :nth-child(3) { animation-delay: .10s; }
@@ -101,8 +100,8 @@ input::placeholder { color: var(--muted); }
 
 /* ---------- 顶部 ---------- */
 .topnav { position: sticky; top: 0; z-index: 6; display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px;
-  padding: calc(10px + var(--safe-t)) 16px 8px; transition: background .3s, border-color .3s; border-bottom: 1px solid transparent; }
-.topnav.scrolled { background: var(--nav); -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%); border-bottom-color: var(--line); }
+  padding: calc(10px + var(--safe-t)) 16px 8px; background: var(--bg); border-bottom: 1px solid transparent; }
+.topnav.scrolled { border-bottom-color: var(--line); }
 .avatar { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; padding: 0; border: 1px solid var(--line2);
   background: var(--card-2); color: var(--text); font-family: var(--num); font-weight: 700; font-size: 17px; transition: transform .2s var(--ease); }
 .avatar:active { transform: scale(.92); }
@@ -256,7 +255,7 @@ a.lrow:active { opacity: .55; }
 
 /* ---------- 底部导航 ---------- */
 .tabbar { position: fixed; bottom: 0; left: 0; right: 0; max-width: 560px; margin: 0 auto; z-index: 8; display: flex;
-  background: var(--nav); -webkit-backdrop-filter: saturate(160%) blur(22px); backdrop-filter: saturate(160%) blur(22px);
+  background: var(--card);
   border-top: 1px solid var(--line); padding: 8px 0 calc(6px + var(--safe-b)); }
 .tabbar button { position: relative; flex: 1; border: none; background: none; padding: 4px 0; font-size: 10px; font-weight: 600; letter-spacing: 1px;
   color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color .3s; }
