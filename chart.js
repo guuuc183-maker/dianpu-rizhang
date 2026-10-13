@@ -1,5 +1,5 @@
 // 柱状图：values 本期，compare 去年同期（可选）。点柱子显示金额。
-const PAD_L = 38, PAD_R = 6, PAD_T = 14, PAD_B = 22;
+const PAD_L = 38, PAD_R = 6, PAD_T = 14, PAD_B = 26;
 const C_CUR = '#C8102E', C_CMP = '#F4B6C1';
 
 const money = n => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
@@ -35,7 +35,7 @@ export class BarChart {
   }
 
   set(data, opts) {
-    this.data = Object.assign({ compare: [], titles: [], focus: -1 }, data);
+    this.data = Object.assign({ compare: [], titles: [], marks: [], focus: -1 }, data);
     if (opts) Object.assign(this.opts, opts);
     this.sel = -1;
     this.layout(true);
@@ -162,6 +162,12 @@ export class BarChart {
         ctx.fillStyle = i === sel ? C_CUR : '#888';
         ctx.fillText(l, PAD_L + gw * (i + 0.5), PAD_T + plotH + 5);
       }
+    });
+    // 节假日：日期下面画个小红点
+    (d.marks || []).forEach((m, i) => {
+      if (!m) return;
+      ctx.fillStyle = C_CUR;
+      ctx.beginPath(); ctx.arc(PAD_L + gw * (i + 0.5), H - 3, 2, 0, Math.PI * 2); ctx.fill();
     });
     this.gw = gw; this.n = n;
   }

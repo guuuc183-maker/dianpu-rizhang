@@ -1,5 +1,7 @@
 // 统计与汇总：按日 / 按周（ISO 周，周一开始）/ 按月 / 按年
 // 记录格式：{ '2026-10-12': { cash, card, note, by } }
+import { holiday } from './holidays.js';
+export { holiday };
 let ALL = {};
 export function setRecords(all) { ALL = all || {}; }
 export function getAll() { return ALL; }
@@ -47,20 +49,22 @@ export function byDay(month) {
   const y = +month.slice(0, 4), m = +month.slice(5, 7);
   const n = daysInMonth(y, m), ln = daysInMonth(y - 1, m);
   const lm = (y - 1) + '-' + pad(m);
-  const labels = [], values = [], compare = [], titles = [];
+  const labels = [], values = [], compare = [], titles = [], marks = [];
   for (let d = 1; d <= n; d++) {
     const k = month + '-' + pad(d);
     labels.push(String(d));
     values.push(round(total(ALL[k])));
     compare.push(d <= ln ? round(total(ALL[lm + '-' + pad(d)])) : 0);
-    titles.push(m + '月' + d + '日 ' + weekday(k));
+    const hd = holiday(k);
+    titles.push(m + '月' + d + '日 ' + weekday(k) + (hd ? ' · ' + hd : ''));
+    marks.push(!!hd);
   }
   const t = today();
   const isNow = month === t.slice(0, 7);
   const end = isNow ? t : month + '-' + pad(n);
   const cur = sumBetween(month + '-01', end);
   const prev = sumBetween(lastYear(month + '-01'), lastYear(end));
-  return { labels, values, compare, titles, cur, prev, pct: pct(cur, prev), focus: isNow ? +t.slice(8) - 1 : -1, isNow };
+  return { labels, values, compare, titles, marks, cur, prev, pct: pct(cur, prev), focus: isNow ? +t.slice(8) - 1 : -1, isNow };
 }
 
 export function byWeek(year) {
@@ -137,4 +141,67 @@ export function lastYearToday(date) {
 
 export function listMonth(month) {
   return Object.keys(ALL).filter(d => d.startsWith(month)).sort().reverse().map(d => Object.assign({ date: d }, ALL[d]));
+}
+
+// 星期分析：某一年里，周一到周日各自的日均营业额（只算有记录的天）
+const WD = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+export function byWeekday(year) {
+  const sum = [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], cnt = [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]];
+  for (const k in ALL) {
+    const y = +k.slice(0, 4);
+    const i = y === year ? 0 : y === year - 1 ? 1 : -1;
+    if (i < 0) continue;
+    const w = (parse(k).getDay() + 6) % 7;
+    sum[i][w] += total(ALL[k]); cnt[i][w]++;
+  }
+  const avg = i => sum[i].map((s, w) => cnt[i][w] ? round(s / cnt[i][w]) : 0);
+  const values = avg(0), compare = avg(1);
+  let best = -1;
+  values.forEach((v, i) => { if (best < 0 || v > values[best]) best = i; });
+  return {
+    labels: WD.slice(), values, compare,
+    titles: WD.map((w, i) => w + '日均（' + cnt[0][i] + '天）'),
+    best: values[best] > 0 ? WD[best] : '', counts: cnt[0]
+  };
+}
+
+// 多家店合计：把几家店的记录按日期加在一起
+export function mergeShops(maps) {
+  const out = {};
+  maps.forEach(m => {
+    for (const k in m) {
+      const r = m[k];
+      if (!out[k]) out[k] = { cash: 0, card: 0, note: '', by: '' };
+      out[k].cash = round(out[k].cash + r.cash);
+      out[k].card = round(out[k].card + r.card);
+    }
+  });
+  return out;
+}
+
+// 按月汇总（导出用）
+export function monthly() {
+  const m = {};
+  for (const k in ALL) {
+    const ym = k.slice(0, 7);
+    if (!m[ym]) m[ym] = { cash: 0, card: 0, days: 0 };
+    m[ym].cash += ALL[k].cash || 0; m[ym].card += ALL[k].card || 0; m[ym].days++;
+  }
+  return Object.keys(m).sort().map(ym => ({ ym, cash: round(m[ym].cash), card: round(m[ym].card), days: m[ym].days }));
+}
+
+// 这个月 vs 去年这个月：本月至今、去年同期（同样天数）、去年整月
+export function monthVsLastYear(month) {
+  const y = +month.slice(0, 4), m = +month.slice(5, 7);
+  const n = daysInMonth(y, m);
+  const t = today();
+  const isNow = month === t.slice(0, 7);
+  const end = isNow ? t : month + '-' + pad(n);
+  const lm = (y - 1) + '-' + pad(m);
+  const cur = sumBetween(month + '-01', end);
+  const prevSame = sumBetween(lm + '-01', lastYear(end));
+  const prevFull = sumBetween(lm + '-01', lm + '-' + pad(daysInMonth(y - 1, m)));
+  const days = Object.keys(ALL).filter(k => k >= month + '-01' && k <= end).length;
+  return { cur, prevSame, prevFull, pct: pct(cur, prevSame), isNow, m, y, days,
+           remain: isNow ? round(prevFull - cur) : 0 };
 }
