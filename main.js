@@ -410,7 +410,9 @@ function renderEntryInfo() {
   const d = entry.date; if (!d || !cur) return;
   useShopData();
   const t = S.today();
-  $('d-text').textContent = d + ' ' + S.weekday(d) + (d === t ? '（今天）' : '');
+  const dy = +d.slice(0, 4) !== +t.slice(0, 4) ? +d.slice(0, 4) + '年' : '';
+  $('d-text').textContent = dy + (+d.slice(5, 7)) + '月' + (+d.slice(8)) + '日 ' + S.weekday(d)
+    + (d === t ? ' · 今天' : d === S.addDays(t, -1) ? ' · 昨天' : '');
   $('d-next').disabled = d >= t;
   $('d-prev').disabled = !isFull(cur) && d <= S.addDays(t, -1);
   const hd = S.holiday(d);
@@ -518,6 +520,23 @@ $('in-date').onchange = e => {
   setDate(v);
 };
 $('d-prev').onclick = () => setDate(S.addDays(entry.date, -1));
+// 左右滑动翻页：记账页换日期，图表页换月份 / 年份
+function onSwipe(el, cb) {
+  let x0 = null, y0 = 0, t0 = 0;
+  el.addEventListener('touchstart', e => { if (e.touches.length !== 1) { x0 = null; return; } x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 60 && Math.abs(dy) < Math.abs(dx) * 0.6 && Date.now() - t0 < 700) cb(dx < 0 ? 1 : -1);
+  }, { passive: true });
+}
+function bump(el, dir) { el.classList.remove('swipe-l', 'swipe-r'); void el.offsetWidth; el.classList.add(dir > 0 ? 'swipe-l' : 'swipe-r'); }
+onSwipe(document.querySelector('#v-entry .hero'), dir => {
+  const t = S.today();
+  if (dir > 0 && entry.date >= t) return;
+  if (dir < 0 && $('d-prev').disabled) return;
+  setDate(S.addDays(entry.date, dir)); bump(document.querySelector('#v-entry .hero'), dir);
+});
 $('d-next').onclick = () => { if (entry.date < S.today()) setDate(S.addDays(entry.date, 1)); };
 const me = () => ({ uid: user.uid, name: myName() });
 function dayHtml(r) {
@@ -629,6 +648,10 @@ function navStep(d) {
   renderCharts();
 }
 $('m-prev').onclick = () => navStep(-1);
+onSwipe(document.querySelector('#v-charts .balance'), dir => {
+  if ((dir > 0 ? $('m-next') : $('m-prev')).disabled) return;
+  navStep(dir); bump(document.querySelector('#v-charts .balance'), dir);
+});
 $('m-next').onclick = () => navStep(1);
 
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
@@ -636,6 +659,7 @@ function setSum(curT, curV, prevT, prevV, pctV, down, note) {
   $('sum-prev-t').textContent = prevT; $('sum-prev').textContent = f2(parseFloat(prevV));
   $('sum-pct').textContent = pctV || '—'; $('sum-pct').className = 'pct big ' + (pctV ? (down ? 'down' : 'up') : '');
   $('sum-note').textContent = note || '';
+  $('vs2').hidden = !(parseFloat(prevV) > 0); // 没有可比的数据就不显示
 }
 function renderMvs(month) {
   const mv = S.monthVsLastYear(month);
@@ -648,6 +672,8 @@ function renderMvs(month) {
   $('mvs-pct').textContent = mv.pct; $('mvs-pct').className = 'pct ' + (mv.cur < mv.prevSame ? 'down' : 'up');
   $('mvs-full-t').textContent = (mv.y - 1) + '年' + mv.m + '月全月';
   $('mvs-full').textContent = f2(mv.prevFull) + ' lei';
+  $('mvs-same-t').parentElement.hidden = !(mv.prevFull > 0);
+  $('mvs-full-t').parentElement.hidden = !(mv.prevFull > 0);
 }
 
 function renderCharts() {
