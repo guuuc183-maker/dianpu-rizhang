@@ -1,6 +1,10 @@
 // 柱状图：values 本期，compare 去年同期（可选）。点柱子显示金额。
 const PAD_L = 38, PAD_R = 6, PAD_T = 14, PAD_B = 26;
-const C_CUR = '#C8102E', C_CMP = '#F4B6C1';
+function colors() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = n => cs.getPropertyValue(n).trim();
+  return { cur: v('--accent') || '#E0193A', cmp: v('--chart-cmp') || '#F6B3BF', grid: v('--chart-grid') || '#eee', text: v('--chart-text') || '#888' };
+}
 
 const money = n => (Math.round((Number(n) || 0) * 100) / 100).toFixed(2);
 function short(v) {
@@ -64,6 +68,8 @@ export class BarChart {
     }
   }
 
+  redraw() { if (this.W) this.draw(); }
+
   setTip(t) {
     this.tipEl.textContent = t || this.opts.hint;
     this.tipEl.classList.toggle('on', !!t);
@@ -80,11 +86,12 @@ export class BarChart {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    const C = colors(), C_CUR = C.cur, C_CMP = C.cmp;
 
     const d = this.data, vals = d.values, cmp = d.compare, hasCompare = this.hasCompare;
     const n = Math.max(d.labels.length, 1);
     const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
-    const font = s => s + 'px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    const font = s => s + 'px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
 
     let max = 0;
     vals.forEach(v => { if (v > max) max = v; });
@@ -98,10 +105,10 @@ export class BarChart {
     ctx.textBaseline = 'middle';
     for (let i = 0; i <= ticks; i++) {
       const y = PAD_T + plotH * (1 - i / ticks);
-      ctx.strokeStyle = i === 0 ? '#ddd' : '#f0f0f0';
+      ctx.strokeStyle = C.grid;
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(PAD_L, Math.round(y) + 0.5); ctx.lineTo(W - PAD_R, Math.round(y) + 0.5); ctx.stroke();
-      ctx.fillStyle = '#aaa';
+      ctx.fillStyle = C.text;
       ctx.fillText(short(step * i), PAD_L - 5, y);
     }
 
@@ -127,7 +134,7 @@ export class BarChart {
     };
 
     if (sel >= 0) {
-      ctx.fillStyle = 'rgba(200,16,46,0.06)';
+      ctx.fillStyle = C.grid;
       ctx.fillRect(PAD_L + gw * sel, PAD_T, gw, plotH);
     }
     for (let i = 0; i < n; i++) {
@@ -142,7 +149,7 @@ export class BarChart {
       ctx.font = font(9);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#555';
+      ctx.fillStyle = C.text;
       for (let i = 0; i < n; i++) {
         if (!(vals[i] > 0)) continue;
         const cx = PAD_L + gw * (i + 0.5) + (hasCompare ? 1 + bw / 2 : 0);
@@ -159,7 +166,7 @@ export class BarChart {
     d.labels.forEach((l, i) => {
       const nearSel = sel >= 0 && i !== sel && Math.abs(i - sel) < every;
       if ((i % every === 0 && !nearSel) || i === sel) {
-        ctx.fillStyle = i === sel ? C_CUR : '#888';
+        ctx.fillStyle = i === sel ? C_CUR : C.text;
         ctx.fillText(l, PAD_L + gw * (i + 0.5), PAD_T + plotH + 5);
       }
     });

@@ -7,6 +7,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = v => parseFloat(String(v || '').replace(/\s/g, '').replace(',', '.')) || 0;
 const pad = n => (n < 10 ? '0' : '') + n;
+const int = n => Math.round(Number(n) || 0).toLocaleString('en-US');
 function hm(t) { const d = new Date(t); return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 
 // ---------- 状态 ----------
@@ -264,19 +265,19 @@ function go(v) {
 // ---------- 同步状态 ----------
 function syncState() {
   const m = metas[cur] || { pending: false, fromCache: true };
-  if (!navigator.onLine) return { t: '离线 · 有网自动同步', c: 'warn' };
-  if (m.pending) return { t: '同步中…', c: 'warn' };
-  if (m.fromCache) return { t: '连接中…', c: '' };
-  return { t: '已同步 ✓', c: 'ok' };
+  if (!navigator.onLine) return { t: '离线', c: 'warn' };
+  if (m.pending) return { t: '同步中', c: 'warn' };
+  if (m.fromCache) return { t: '连接中', c: '' };
+  return { t: '已同步', c: 'ok' };
 }
 function renderHeader() {
   if (!shops[cur]) return;
   $('hdr-shop-name').textContent = shops[cur].name;
   $('hdr-caret').hidden = false;
   const s = syncState();
-  $('hdr-sync').textContent = s.t;
+  $('hdr-sync').textContent = s.c === 'ok' ? '✓ ' + s.t : s.t;
+  $('hdr-sync').className = 'syncpill ' + s.c;
   $('sh-sync').textContent = s.t;
-  $('sh-sync').className = s.c;
 }
 window.addEventListener('online', renderHeader);
 window.addEventListener('offline', renderHeader);
@@ -349,7 +350,7 @@ function renderEntryInfo() {
   if (isFull(cur)) {
     const mv = S.monthVsLastYear(d.slice(0, 7));
     $('mo-cur-t').textContent = mv.m + '月' + (mv.isNow ? '至今' : '合计');
-    $('mo-cur').textContent = S.money(mv.cur);
+    $('mo-cur').textContent = int(mv.cur);
     $('mo-pct').textContent = mv.pct;
     $('mo-pct').className = 'pct ' + (mv.cur < mv.prevSame ? 'down' : 'up');
     $('mo-sub').textContent = '去年' + mv.m + '月' + (mv.isNow ? '同期 ' + S.money(mv.prevSame) + ' · 全月 ' : '全月 ') + S.money(mv.prevFull);
@@ -363,10 +364,10 @@ function calc() {
   useShopData();
   const ly = S.lastYearToday(entry.date);
   const lyh = S.holiday(ly.lyDate), lwh = S.holiday(ly.lwDate);
-  $('ly-date').innerHTML = '去年今天 <span class="muted small">' + ly.lyDate.slice(5) + ' ' + ly.lyWeekday + '</span>' + (lyh ? '<span class="hol">' + esc(lyh.split(' ')[0]) + '</span>' : '');
-  $('lw-date').innerHTML = '去年同一个' + ly.lwWeekday + ' <span class="muted small">' + ly.lwDate.slice(5) + '</span>' + (lwh ? '<span class="hol">' + esc(lwh.split(' ')[0]) + '</span>' : '');
+  $('ly-date').textContent = '去年今天' + (lyh ? '·' + lyh.split(' ')[0] : '');
+  $('lw-date').textContent = '去年同' + ly.lwWeekday + (lwh ? '·' + lwh.split(' ')[0] : '');
   const put = (id, val) => {
-    $(id + '-val').textContent = val === null ? '—' : S.money(val);
+    $(id + '-val').textContent = val === null ? '—' : int(val);
     const p = $(id + '-pct');
     p.textContent = val && tot ? S.pct(tot, val) : '';
     p.className = 'pct ' + (tot < val ? 'down' : 'up');
@@ -431,7 +432,7 @@ $('in-year').onchange = e => { charts.year = +e.target.value; renderCharts(); };
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
   $('sum-cur-t').textContent = curT; $('sum-cur').textContent = curV;
   $('sum-prev-t').textContent = prevT; $('sum-prev').textContent = prevV;
-  $('sum-pct').textContent = pctV || ''; $('sum-pct').className = 'pct ' + (down ? 'down' : 'up');
+  $('sum-pct').textContent = pctV || '—'; $('sum-pct').className = 'pct big ' + (pctV ? (down ? 'down' : 'up') : '');
   $('sum-note').textContent = note || '';
 }
 function renderMvs(month) {
@@ -468,12 +469,12 @@ function renderCharts() {
   if (tab === 'day') {
     data = S.byDay(month);
     const mv = S.monthVsLastYear(month);
-    setSum(mv.m + '月' + (mv.isNow ? '至今' : '合计'), S.money(mv.cur), '去年' + mv.m + '月' + (mv.isNow ? '同期' : ''), S.money(mv.prevSame),
+    setSum(mv.isNow ? '至今' : '全月', S.money(mv.cur), '去年' + mv.m + '月' + (mv.isNow ? '同期' : ''), S.money(mv.prevSame),
       mv.pct, mv.cur < mv.prevSame, '去年' + mv.m + '月全月：' + S.money(mv.prevFull) + ' lei' + (mv.isNow && mv.remain > 0 ? '，还差 ' + S.money(mv.remain) + ' 追平' : ''));
-    $('chart-title').textContent = '每天营业额' + scopeName + '（红点 = 节假日）';
+    $('chart-title').textContent = '每天营业额' + scopeName + ' · 红点=节假日';
   } else if (tab === 'week' || tab === 'month') {
     data = tab === 'week' ? S.byWeek(year) : S.byMonth(year);
-    setSum(year + '年' + (data.isNow ? '至今' : '全年'), S.money(data.cur), (year - 1) + '年' + (data.isNow ? '同期' : '全年'),
+    setSum(data.isNow ? '至今' : '全年', S.money(data.cur), (year - 1) + '年' + (data.isNow ? '同期' : '全年'),
       S.money(data.prev), data.pct, data.cur < data.prev, '');
     $('chart-title').textContent = (tab === 'week' ? '每周营业额（左右滑动）' : '每月营业额') + scopeName;
     opt = { minGroup: tab === 'week' ? 26 : 0, legendA: year + '年', legendB: (year - 1) + '年' };
@@ -496,6 +497,7 @@ function renderCharts() {
 
   const showList = tab === 'day';
   $('day-list').hidden = !showList;
+  $('list-title').hidden = !showList;
   if (showList) {
     const list = S.listMonth(month);
     $('day-list').innerHTML = list.length ? list.map(r => {
@@ -558,13 +560,14 @@ function renderShop() {
   const role = roleOf(cur), isOwner = role === 'owner';
   $('sh-name').textContent = s.name;
   $('lnk-rename').hidden = !isOwner;
-  $('sh-role').textContent = '我的身份：' + ROLE_TEXT[role] + (role === 'staff' ? ' · 只能记今天和昨天' : '') + (mine.shopIds.length > 1 ? ' · 共 ' + mine.shopIds.length + ' 家店' : '');
+  $('sh-role').textContent = '我是' + ROLE_TEXT[role] + (mine.shopIds.length > 1 ? ' · 共 ' + mine.shopIds.length + ' 家店' : '');
   $('sh-code').textContent = s.code;
   $('btn-recode').hidden = !isOwner;
   $('btn-leave').hidden = isOwner;
   $('sh-email').textContent = user.email || '';
   const ms = Object.entries(s.members || {}).sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
-  $('sh-members-t').textContent = '成员（' + ms.length + ' 人）';
+  $('sh-members-t').textContent = '成员 · ' + ms.length + ' 人';
+  $('sh-mcount').textContent = ms.length + ' 人';
   $('sh-members').innerHTML = ms.map(([uid, m]) => {
     const r = uid === s.owner ? 'owner' : (m.role || 'manager');
     const tag = uid === s.owner ? '<span class="tag">店主</span>' : '';
@@ -621,6 +624,25 @@ $('btn-leave').onclick = async () => {
 };
 $('logs-toggle2').onclick = () => { $('recent-logs').hidden = !$('recent-logs').hidden; };
 $('btn-logout').onclick = () => { if (confirm('确定退出登录？')) db.logout(); };
+
+// ---------- 外观：浅色 / 深色 ----------
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function effectiveTheme() { return document.documentElement.dataset.theme || (darkMQ.matches ? 'dark' : 'light'); }
+function paintTheme() {
+  const t = effectiveTheme();
+  document.querySelectorAll('#theme-toggle button').forEach(b => b.classList.toggle('on', b.dataset.th === t));
+  const meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.content = t === 'dark' ? '#000000' : '#F2F2F7';
+  mainChart.redraw(); wdChart.redraw();
+}
+$('theme-toggle').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.documentElement.dataset.theme = b.dataset.th;
+  try { localStorage.setItem('theme', b.dataset.th); } catch (err) {}
+  paintTheme();
+};
+darkMQ.addEventListener && darkMQ.addEventListener('change', paintTheme);
+paintTheme();
 
 // 安装到主屏幕提示
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
