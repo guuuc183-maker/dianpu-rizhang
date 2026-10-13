@@ -531,9 +531,15 @@ $('in-date').onchange = e => {
 };
 $('d-prev').onclick = () => setDate(S.addDays(entry.date, -1));
 // 左右滑动翻页：记账页换日期，图表页换月份 / 年份
-function onSwipe(el, cb) {
+// 只要手指从屏幕上半部分开始滑就算（图表本身的左右拖动区域除外）
+function onSwipe(el, cb, view) {
   let x0 = null, y0 = 0, t0 = 0;
-  el.addEventListener('touchstart', e => { if (e.touches.length !== 1) { x0 = null; return; } x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, { passive: true });
+  el.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    if (e.touches.length !== 1 || t.clientY > window.innerHeight * 0.55
+      || (view && document.getElementById('v-' + view).hidden) || e.target.closest('.chart-scroll, #sheet, .tabbar')) { x0 = null; return; }
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+  }, { passive: true });
   el.addEventListener('touchend', e => {
     if (x0 === null) return;
     const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
@@ -541,12 +547,12 @@ function onSwipe(el, cb) {
   }, { passive: true });
 }
 function bump(el, dir) { el.classList.remove('swipe-l', 'swipe-r'); void el.offsetWidth; el.classList.add(dir > 0 ? 'swipe-l' : 'swipe-r'); }
-onSwipe(document.querySelector('#v-entry .hero'), dir => {
+onSwipe(document, dir => {
   const t = S.today();
   if (dir > 0 && entry.date >= t) return;
   if (dir < 0 && $('d-prev').disabled) return;
   setDate(S.addDays(entry.date, dir)); bump(document.querySelector('#v-entry .hero'), dir);
-});
+}, 'entry');
 $('d-next').onclick = () => { if (entry.date < S.today()) setDate(S.addDays(entry.date, 1)); };
 const me = () => ({ uid: user.uid, name: myName() });
 function dayHtml(r) {
@@ -658,10 +664,10 @@ function navStep(d) {
   renderCharts();
 }
 $('m-prev').onclick = () => navStep(-1);
-onSwipe(document.querySelector('#v-charts .balance'), dir => {
+onSwipe(document, dir => {
   if ((dir > 0 ? $('m-next') : $('m-prev')).disabled) return;
   navStep(dir); bump(document.querySelector('#v-charts .balance'), dir);
-});
+}, 'charts');
 $('m-next').onclick = () => navStep(1);
 
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
