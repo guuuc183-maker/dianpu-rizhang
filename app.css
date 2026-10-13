@@ -175,6 +175,12 @@ input::placeholder { color: var(--muted); }
 :root[data-theme="dark"] .thumb { background: #2A333B; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .thumb { background: #2A333B; } }
 #chart-seg button { padding: 7px 22px; font-family: var(--num); font-size: 16px; letter-spacing: 1px; }
+.monthnav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 2px; }
+.monthnav #m-text { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+.mbtn { border: 1px solid var(--line2); background: var(--card); color: var(--text); border-radius: 12px; padding: 10px 16px;
+  font-size: 15px; font-weight: 600; cursor: pointer; transition: transform .15s var(--ease), opacity .2s; }
+.mbtn:active { transform: scale(.94); }
+.mbtn:disabled { opacity: .3; }
 .period { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; color: var(--text2); }
 .picker { position: relative; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text); }
 .picker input, .picker select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; -webkit-appearance: none; appearance: none; }

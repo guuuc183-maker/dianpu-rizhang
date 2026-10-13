@@ -496,8 +496,14 @@ $('btn-del').onclick = () => {
 };
 
 // ---------- 图表 ----------
-const charts = { tab: 'day', scope: 'shop', month: S.today().slice(0, 7), year: +S.today().slice(0, 4) };
-const mainChart = new BarChart($('chart-main'), { height: 220 });
+const charts = { tab: 'day', scope: 'shop', month: S.today().slice(0, 7), year: +S.today().slice(0, 4), mon: S.today().slice(0, 7) };
+const mainChart = new BarChart($('chart-main'), { height: 220, onSelect: i => {
+  // 月视图：点柱子直接切到那个月
+  if (charts.tab !== 'month') return true;
+  const ym = (+charts.mon.slice(0, 4)) + '-' + pad(i + 1);
+  if (ym > S.today().slice(0, 7)) return false;
+  charts.mon = ym; renderCharts(); return false;
+} });
 const wdChart = new BarChart($('chart-wd'), { height: 180 });
 $('in-month').value = charts.month;
 $('in-month').max = charts.month;
@@ -522,6 +528,14 @@ $('chart-seg').onclick = e => {
 };
 $('in-month').onchange = e => { if (e.target.value) { charts.month = e.target.value; renderCharts(); } };
 $('in-year').onchange = e => { charts.year = +e.target.value; renderCharts(); };
+// 月：上月 / 下月
+function shiftMonth(ym, d) {
+  let y = +ym.slice(0, 4), m = +ym.slice(5, 7) + d;
+  while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; }
+  return y + '-' + pad(m);
+}
+$('m-prev').onclick = () => { charts.mon = shiftMonth(charts.mon, -1); renderCharts(); };
+$('m-next').onclick = () => { if (charts.mon < S.today().slice(0, 7)) { charts.mon = shiftMonth(charts.mon, 1); renderCharts(); } };
 
 function setSum(curT, curV, prevT, prevV, pctV, down, note) {
   $('sum-cur-t').textContent = curT; setNum($('sum-cur'), parseFloat(curV) || 0, true);
@@ -548,7 +562,9 @@ function renderCharts() {
   const { tab, month, year } = charts;
   const thisYear = +S.today().slice(0, 4);
   $('pick-month').hidden = tab !== 'day';
-  $('pick-year').hidden = tab === 'day' || tab === 'year';
+  $('pick-year').hidden = tab === 'day' || tab === 'year' || tab === 'month';
+  $('mnav').hidden = tab !== 'month';
+  $('period').hidden = tab === 'month';
   const first = Math.min(S.firstYear(), thisYear);
   let opts = '';
   for (let y = thisYear; y >= first; y--) opts += `<option value="${y}"${y === year ? ' selected' : ''}>${y}</option>`;
@@ -566,14 +582,28 @@ function renderCharts() {
     setSum(mv.isNow ? '至今' : '全月', S.money(mv.cur), '去年' + mv.m + '月' + (mv.isNow ? '同期' : ''), S.money(mv.prevSame),
       mv.pct, mv.cur < mv.prevSame, '去年' + mv.m + '月全月：' + S.money(mv.prevFull) + ' lei' + (mv.isNow && mv.remain > 0 ? '，还差 ' + S.money(mv.remain) + ' 追平' : ''));
     $('chart-title').textContent = '每天营业额' + scopeName;
-  } else if (tab === 'week' || tab === 'month') {
-    data = tab === 'week' ? S.byWeek(year) : S.byMonth(year);
+  } else if (tab === 'month') {
+    const mon = charts.mon, my = +mon.slice(0, 4), mi = +mon.slice(5, 7) - 1;
+    const mv = S.monthVsLastYear(mon);
+    $('m-text').textContent = my + '年' + (mi + 1) + '月';
+    $('m-next').disabled = mon >= S.today().slice(0, 7);
+    setSum(mv.isNow ? '至今' : '全月', S.money(mv.cur), '去年' + mv.m + '月' + (mv.isNow ? '同期' : ''), S.money(mv.prevSame),
+      mv.pct, mv.cur < mv.prevSame, '');
+    data = S.byMonth(my);
+    data.focus = mi;
+    opt = { minGroup: 0, legendA: my + '年', legendB: (my - 1) + '年' };
+    $('chart-title').textContent = my + '年每月营业额' + scopeName;
+    renderMvs(mon);
+    mainChart.set(data, opt);
+    mainChart.select(mi);
+    data = null;
+  } else if (tab === 'week') {
+    data = S.byWeek(year);
     setSum(data.isNow ? '至今' : '全年', S.money(data.cur), (year - 1) + '年' + (data.isNow ? '同期' : '全年'),
       S.money(data.prev), data.pct, data.cur < data.prev, '');
-    $('chart-title').textContent = (tab === 'week' ? '每周营业额（左右滑动）' : '每月营业额') + scopeName;
-    opt = { minGroup: tab === 'week' ? 26 : 0, legendA: year + '年', legendB: (year - 1) + '年' };
-    if (tab === 'month') renderMvs(year === thisYear ? S.today().slice(0, 7) : year + '-12');
-    if (tab === 'week') {
+    $('chart-title').textContent = '每周营业额（左右滑动）' + scopeName;
+    opt = { minGroup: 26, legendA: year + '年', legendB: (year - 1) + '年' };
+    {
       const wd = S.byWeekday(year);
       const bi = wd.values.indexOf(Math.max(...wd.values));
       $('wd-note').textContent = wd.best
@@ -587,7 +617,7 @@ function renderCharts() {
     data = S.byYear();
     $('chart-title').textContent = '历年总营业额' + scopeName;
   }
-  mainChart.set(data, opt);
+  if (data) mainChart.set(data, opt);
 
   const showList = tab === 'day';
   $('day-list').hidden = !showList;

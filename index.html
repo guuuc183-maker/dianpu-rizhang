@@ -146,7 +146,12 @@
         <button data-t="month">月</button>
         <button data-t="year">年</button>
       </div>
-      <div class="period">
+      <div class="monthnav" id="mnav" hidden>
+        <button class="mbtn" id="m-prev">‹ 上月</button>
+        <span id="m-text"></span>
+        <button class="mbtn" id="m-next">下月 ›</button>
+      </div>
+      <div class="period" id="period">
         <label class="picker" id="pick-month"><input type="month" id="in-month"><span id="month-text"></span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></label>
         <label class="picker" id="pick-year" hidden><select id="in-year"></select><span id="year-text"></span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></label>
         <span id="sum-cur-t"></span>

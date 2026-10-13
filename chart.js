@@ -205,6 +205,13 @@ export class BarChart {
     const x = e.clientX - rect.left;
     const i = Math.floor((x - PAD_L) / this.gw);
     if (i < 0 || i >= this.n) return;
+    if (this.opts.onSelect && this.opts.onSelect(i) === false) return;
+    this.select(i);
+  }
+
+  // 选中第 i 根柱子并显示金额
+  select(i) {
+    if (!(i >= 0 && i < this.n)) return;
     this.sel = i;
     const d = this.data;
     let tip = (d.titles[i] || d.labels[i]) + '：' + money(d.values[i]) + ' lei';
@@ -217,6 +224,6 @@ export class BarChart {
       }
     }
     this.setTip(tip);
-    this.draw();
+    if (this.p == null || this.p >= 1) this.draw();
   }
 }
